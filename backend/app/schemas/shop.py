@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -13,3 +12,4 @@ class Shop(BaseModel):
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     is_active: bool = True
+    items: list[str] = Field(default_factory=list)

@@ -1,4 +1,3 @@
-
 import {
   MapContainer,
   TileLayer,
@@ -12,19 +11,16 @@ interface MapViewProps {
   shops: Shop[];
 }
 
-const ST_JOHNS_CENTER: [number, number] = [
-  47.5615,
-  -52.7126,
-];
+const MapView = ({ shops }: MapViewProps) => {
+  const position: [number, number] = [47.5615, -52.7126];
 
-function MapView({ shops }: MapViewProps) {
   return (
-    <div style={{ width: "100%", height: "500px" }}>
+    <div className="map-container">
       <MapContainer
-        center={ST_JOHNS_CENTER}
+        center={position}
         zoom={13}
         scrollWheelZoom={true}
-        style={{ width: "100%", height: "100%" }}
+        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -34,31 +30,38 @@ function MapView({ shops }: MapViewProps) {
         {shops.map((shop) => (
           <CircleMarker
             key={shop.id}
-            center={[
-              shop.latitude,
-              shop.longitude,
-            ]}
+            center={[shop.latitude, shop.longitude]}
             radius={9}
             pathOptions={{
               color: "#ffffff",
-              fillColor: "#2563eb",
+              fillColor: shop.category === "Restaurant" ? "#e65c36" : "#2563eb",
               fillOpacity: 1,
             }}
           >
             <Popup>
-              <strong>{shop.name}</strong>
-              <br />
-              Category: {shop.category}
-              <br />
-              {shop.description}
-              <br />
-              {shop.address}
+              <div className="shop-popup">
+                <h3>{shop.name}</h3>
+                <p>{shop.description}</p>
+                <p><strong>Category:</strong> {shop.category}</p>
+                <p><strong>Address:</strong> {shop.address}</p>
+
+                {shop.items.length > 0 && (
+                  <>
+                    <h4>Food Menu</h4>
+                    <ul>
+                      {shop.items.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
             </Popup>
           </CircleMarker>
         ))}
       </MapContainer>
     </div>
   );
-}
+};
 
 export default MapView;

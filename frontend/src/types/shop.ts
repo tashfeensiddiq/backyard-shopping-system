@@ -1,4 +1,3 @@
-
 export interface Shop {
   id: number;
   name: string;
@@ -8,4 +7,5 @@ export interface Shop {
   latitude: number;
   longitude: number;
   is_active: boolean;
+  items: string[];
 }
