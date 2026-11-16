@@ -1,15 +1,25 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class Shop(BaseModel):
+class FoodItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
-    description: str
+    description: str | None = None
+    price: float
+    is_available: bool
+
+
+class ShopResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: str | None = None
     category: str
     address: str
-    latitude: float = Field(ge=-90, le=90)
-    longitude: float = Field(ge=-180, le=180)
-    is_active: bool = True
-    items: list[str] = Field(default_factory=list)
+    latitude: float
+    longitude: float
+    is_active: bool
+    items: list[FoodItemResponse] = Field(default_factory=list)
