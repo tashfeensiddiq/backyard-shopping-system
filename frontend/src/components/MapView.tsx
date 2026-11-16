@@ -1,3 +1,4 @@
+
 import {
   MapContainer,
   TileLayer,
@@ -34,7 +35,10 @@ const MapView = ({ shops }: MapViewProps) => {
             radius={9}
             pathOptions={{
               color: "#ffffff",
-              fillColor: shop.category === "Restaurant" ? "#e65c36" : "#2563eb",
+              fillColor:
+                shop.category === "Restaurant"
+                  ? "#e65c36"
+                  : "#2563eb",
               fillOpacity: 1,
             }}
           >
@@ -42,18 +46,18 @@ const MapView = ({ shops }: MapViewProps) => {
               <div className="shop-popup">
                 <h3>{shop.name}</h3>
                 <p>{shop.description}</p>
-                <p><strong>Category:</strong> {shop.category}</p>
-                <p><strong>Address:</strong> {shop.address}</p>
+                <p>
+                  <strong>Category:</strong> {shop.category}
+                </p>
+                <p>
+                  <strong>Address:</strong> {shop.address}
+                </p>
 
-                {shop.items.length > 0 && (
-                  <>
-                    <h4>Food Menu</h4>
-                    <ul>
-                      {shop.items.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  </>
+                {shop.category === "Restaurant" && (
+                  <p>
+                    <strong>Available food items:</strong>{" "}
+                    {shop.items.filter(item => item.is_available).length}
+                  </p>
                 )}
               </div>
             </Popup>
