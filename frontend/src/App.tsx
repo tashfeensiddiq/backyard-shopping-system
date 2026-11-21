@@ -5,26 +5,11 @@ import { fetchShops } from "./services/shopService";
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
 
-interface Addon {
-  name: string;
-  price: number;
-}
-
 interface CartItem {
   item: FoodItem;
   quantity: number;
   shopName: string;
-  addons: Addon[];
-  cartKey: string;
 }
-
-const ADDON_OPTIONS: Addon[] = [
-  { name: "Extra Sauce", price: 0.50 },
-  { name: "Mayonnaise", price: 0.50 },
-  { name: "Black Pepper", price: 0.25 },
-  { name: "Sriracha Sauce", price: 0.75 },
-  { name: "Extra Cheese", price: 1.00 },
-];
 
 function App() {
   const [shops, setShops] = useState<Shop[]>([]);
@@ -33,11 +18,6 @@ function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState("");
-  const [selectedItem, setSelectedItem] =
-  useState<FoodItem | null>(null);
-
-const [selectedAddons, setSelectedAddons] =
-  useState<Addon[]>([]);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -47,91 +27,68 @@ const [selectedAddons, setSelectedAddons] =
 
   const restaurant = restaurants[0];
 
-  // Add item and selected extras to cart
-const addToCart = (
-  item: FoodItem,
-  shopName: string,
-  addons: Addon[]
-) => {
-  const cartKey = JSON.stringify([
-  item.id,
-  addons.map(a => a.name).sort()
-]);
-
-  setCart((previousCart) => {
-    const existingItem = previousCart.find(
-      (cartItem) => cartItem.cartKey === cartKey
-    );
-
-    if (existingItem) {
-      return previousCart.map((cartItem) =>
-        cartItem.cartKey === cartKey
-          ? {
-              ...cartItem,
-              quantity: cartItem.quantity + 1,
-            }
-          : cartItem
+  // Add item to cart
+  const addToCart = (item: FoodItem, shopName: string) => {
+    setCart((previousCart) => {
+      const existingItem = previousCart.find(
+        (cartItem) => cartItem.item.id === item.id
       );
+
+      if (existingItem) {
+        return previousCart.map((cartItem) =>
+          cartItem.item.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      }
+
+      return [
+        ...previousCart,
+        {
+          item,
+          quantity: 1,
+          shopName,
+        },
+      ];
+    });
+
+    // Show notification
+    setToast(`${item.name} added to cart`);
+
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current);
     }
 
-    return [
-      ...previousCart,
-      {
-        item,
-        quantity: 1,
-        shopName,
-        addons: [...addons],
-        cartKey,
-      },
-    ];
-  });
-
-  const extraNames = addons.map(a => a.name).join(", ");
-
-  setToast(
-    `${item.name} added to cart${
-      extraNames ? ` with ${extraNames}` : ""
-    }`
-  );
-
-  if (toastTimer.current) {
-    clearTimeout(toastTimer.current);
-  }
-
-  toastTimer.current = setTimeout(() => {
-    setToast("");
-    toastTimer.current = null;
-  }, 2500);
-};
-
+    toastTimer.current = setTimeout(() => {
+      setToast("");
+      toastTimer.current = null;
+    }, 2500);
+  };
 
   // Update item quantity
-const updateQuantity = (
-  cartKey: string,
-  change: number
-) => {
-  setCart((previousCart) =>
-    previousCart
-      .map((cartItem) =>
-        cartItem.cartKey === cartKey
-          ? {
-              ...cartItem,
-              quantity: cartItem.quantity + change,
-            }
-          : cartItem
-      )
-      .filter((cartItem) => cartItem.quantity > 0)
-  );
-};
+  const updateQuantity = (itemId: number, change: number) => {
+    setCart((previousCart) =>
+      previousCart
+        .map((cartItem) =>
+          cartItem.item.id === itemId
+            ? {
+                ...cartItem,
+                quantity: cartItem.quantity + change,
+              }
+            : cartItem
+        )
+        .filter((cartItem) => cartItem.quantity > 0)
+    );
+  };
 
-// Remove item from cart
-const removeFromCart = (cartKey: string) => {
-  setCart((previousCart) =>
-    previousCart.filter(
-      (cartItem) => cartItem.cartKey !== cartKey
-    )
-  );
-};
+  // Remove item from cart
+  const removeFromCart = (itemId: number) => {
+    setCart((previousCart) =>
+      previousCart.filter(
+        (cartItem) => cartItem.item.id !== itemId
+      )
+    );
+  };
 
   // Calculate cart count
   const cartCount = cart.reduce(
@@ -139,20 +96,12 @@ const removeFromCart = (cartKey: string) => {
     0
   );
 
-  // Calculate cart total including add-ons
-const cartTotal = cart.reduce(
-  (total, cartItem) => {
-    const addonTotal = cartItem.addons.reduce(
-      (sum, addon) => sum + addon.price,
-      0
-    );
-
-    return total +
-      (Number(cartItem.item.price) + addonTotal) *
-      cartItem.quantity;
-  },
-  0
-);
+  // Calculate cart total
+  const cartTotal = cart.reduce(
+    (total, item) =>
+      total + item.item.price * item.quantity,
+    0
+  );
 
   // Load shops from API
   useEffect(() => {
@@ -232,115 +181,36 @@ const cartTotal = cart.reduce(
             </div>
 
             <div className="food-list">
-  {restaurant.items
-    .filter((item) => item.is_available)
-    .map((item) => (
-      <div className="food-card" key={item.id}>
+              {restaurant.items
+                .filter((item) => item.is_available)
+                .map((item) => (
+                  <button
+                    className="food-card"
+                    key={item.id}
+                    onClick={() =>
+                      addToCart(item, restaurant.name)
+                    }
+                    title={`Add ${item.name} to cart`}
+                  >
+                    <div className="food-card-content">
+                      <div>
+                        <h4>{item.name}</h4>
+                        <p>{item.description}</p>
+                      </div>
 
-        <div className="food-card-content">
-          <div>
-            <h4>{item.name}</h4>
-            <p>{item.description}</p>
-          </div>
+                      <div className="food-card-bottom">
+                        <strong>
+                          ${Number(item.price).toFixed(2)}
+                        </strong>
 
-          <div className="food-card-bottom">
-            <strong>
-              ${Number(item.price).toFixed(2)}
-            </strong>
-
-            <button
-              className="addon-confirm-button"
-              onClick={() => {
-                setSelectedItem(item);
-                setSelectedAddons([]);
-              }}
-            >
-              Customize & Add
-            </button>
-          </div>
-        </div>
-
-        {selectedItem?.id === item.id && (
-          <div
-            className="addons-section"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h4>Choose Your Add-ons</h4>
-
-            {ADDON_OPTIONS.map((addon) => (
-              <div
-                className="addon-option"
-                key={addon.name}
-              >
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={selectedAddons.some(
-                      (a) => a.name === addon.name
-                    )}
-                    onChange={() => {
-                      setSelectedAddons((previous) =>
-                        previous.some(
-                          (a) => a.name === addon.name
-                        )
-                          ? previous.filter(
-                              (a) => a.name !== addon.name
-                            )
-                          : [...previous, addon]
-                      );
-                    }}
-                  />
-
-                  {addon.name}
-                </label>
-
-                <span className="addon-price">
-                  +${addon.price.toFixed(2)}
-                </span>
-              </div>
-            ))}
-
-            <div className="addon-total">
-              <span>Extra Charges:</span>
-
-              <span>
-                ${selectedAddons
-                  .reduce((sum, a) => sum + a.price, 0)
-                  .toFixed(2)}
-              </span>
+                        <span className="add-item">
+                          + Add
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
             </div>
-
-            <button
-              className="addon-confirm-button"
-              onClick={() => {
-                addToCart(
-                  item,
-                  restaurant.name,
-                  selectedAddons
-                );
-
-                setSelectedItem(null);
-                setSelectedAddons([]);
-              }}
-            >
-              Add to Cart
-            </button>
-
-            <button
-              className="remove-item"
-              onClick={() => {
-                setSelectedItem(null);
-                setSelectedAddons([]);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-
-      </div>
-    ))}
-</div>
           </>
         )}
 
@@ -441,29 +311,19 @@ const cartTotal = cart.reduce(
                   cart.map((cartItem) => (
                     <div
                       className="cart-item"
-                      key={cartItem.cartKey}
+                      key={cartItem.item.id}
                     >
                       <div className="cart-item-info">
                         <h4>{cartItem.item.name}</h4>
 
                         <p>{cartItem.shopName}</p>
-            {cartItem.addons.length > 0 && (
-              <p>
-                  Extras:{" "}
-                  {cartItem.addons
-                  .map((addon) => addon.name)
-                  .join(", ")}
-                </p>
-)}
+
                         <strong>
                           $
-                        {(
-  (Number(cartItem.item.price) +
-    cartItem.addons.reduce(
-      (sum, addon) => sum + addon.price,
-      0
-    )) * cartItem.quantity
-).toFixed(2)}
+                          {(
+                            cartItem.item.price *
+                            cartItem.quantity
+                          ).toFixed(2)}
                         </strong>
                       </div>
 
@@ -472,7 +332,7 @@ const cartTotal = cart.reduce(
                           <button
                             onClick={() =>
                               updateQuantity(
-                                cartItem.cartKey,
+                                cartItem.item.id,
                                 -1
                               )
                             }
@@ -486,7 +346,7 @@ const cartTotal = cart.reduce(
                           <button
                             onClick={() =>
                               updateQuantity(
-                                cartItem.cartKey,
+                                cartItem.item.id,
                                 1
                               )
                             }
@@ -499,7 +359,7 @@ const cartTotal = cart.reduce(
                         <button
                           className="remove-item"
                           onClick={() =>
-                            removeFromCart(cartItem.cartKey)
+                            removeFromCart(cartItem.item.id)
                           }
                         >
                           Remove
