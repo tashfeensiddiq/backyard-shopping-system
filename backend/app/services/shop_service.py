@@ -10,7 +10,7 @@ def get_active_shops() -> list[ShopResponse]:
     try:
         shops = (
             db.query(Shop)
-            .filter(Shop.is_active == True)
+            .filter(Shop.is_active.is_(True))
             .all()
         )
 
@@ -21,7 +21,7 @@ def get_active_shops() -> list[ShopResponse]:
                 db.query(FoodItem)
                 .filter(
                     FoodItem.shop_id == shop.id,
-                    FoodItem.is_available == True
+                    FoodItem.is_available.is_(True)
                 )
                 .all()
             )
