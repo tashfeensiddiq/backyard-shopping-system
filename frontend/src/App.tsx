@@ -5,11 +5,26 @@ import { fetchShops } from "./services/shopService";
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
 
+interface Addon {
+  name: string;
+  price: number;
+}
+
 interface CartItem {
   item: FoodItem;
   quantity: number;
   shopName: string;
+  addons: Addon[];
+  cartKey: string;
 }
+
+const ADDON_OPTIONS: Addon[] = [
+  { name: "Extra Sauce", price: 0.50 },
+  { name: "Mayonnaise", price: 0.50 },
+  { name: "Black Pepper", price: 0.25 },
+  { name: "Sriracha Sauce", price: 0.75 },
+  { name: "Extra Cheese", price: 1.00 },
+];
 
 function App() {
   const [shops, setShops] = useState<Shop[]>([]);
@@ -18,6 +33,8 @@ function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -27,68 +44,91 @@ function App() {
 
   const restaurant = restaurants[0];
 
-  // Add item to cart
-  const addToCart = (item: FoodItem, shopName: string) => {
-    setCart((previousCart) => {
-      const existingItem = previousCart.find(
-        (cartItem) => cartItem.item.id === item.id
+// Add item and selected extras to cart
+const addToCart = (
+  item: FoodItem,
+  shopName: string,
+  addons: Addon[]
+) => {
+  const cartKey = JSON.stringify([
+    item.id,
+    addons.map((addon) => addon.name).sort(),
+  ]);
+
+  setCart((previousCart) => {
+    const existingItem = previousCart.find(
+      (cartItem) => cartItem.cartKey === cartKey
+    );
+
+    if (existingItem) {
+      return previousCart.map((cartItem) =>
+        cartItem.cartKey === cartKey
+          ? {
+              ...cartItem,
+              quantity: cartItem.quantity + 1,
+            }
+          : cartItem
       );
-
-      if (existingItem) {
-        return previousCart.map((cartItem) =>
-          cartItem.item.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
-      }
-
-      return [
-        ...previousCart,
-        {
-          item,
-          quantity: 1,
-          shopName,
-        },
-      ];
-    });
-
-    // Show notification
-    setToast(`${item.name} added to cart`);
-
-    if (toastTimer.current) {
-      clearTimeout(toastTimer.current);
     }
 
-    toastTimer.current = setTimeout(() => {
-      setToast("");
-      toastTimer.current = null;
-    }, 2500);
-  };
+    return [
+      ...previousCart,
+      {
+        item,
+        quantity: 1,
+        shopName,
+        addons: [...addons],
+        cartKey,
+      },
+    ];
+  });
+
+  const extraNames = addons.map((addon) => addon.name).join(", ");
+
+  setToast(
+    `${item.name} added to cart${
+      extraNames ? ` with ${extraNames}` : ""
+    }`
+  );
+
+  if (toastTimer.current) {
+    clearTimeout(toastTimer.current);
+  }
+
+  toastTimer.current = setTimeout(() => {
+    setToast("");
+    toastTimer.current = null;
+  }, 2500);
+};
+
 
   // Update item quantity
-  const updateQuantity = (itemId: number, change: number) => {
-    setCart((previousCart) =>
-      previousCart
-        .map((cartItem) =>
-          cartItem.item.id === itemId
-            ? {
-                ...cartItem,
-                quantity: cartItem.quantity + change,
-              }
-            : cartItem
-        )
-        .filter((cartItem) => cartItem.quantity > 0)
-    );
-  };
-
-  // Remove item from cart
-  const removeFromCart = (itemId: number) => {
-    setCart((previousCart) =>
-      previousCart.filter(
-        (cartItem) => cartItem.item.id !== itemId
+const updateQuantity = (
+  cartKey: string,
+  change: number
+) => {
+  setCart((previousCart) =>
+    previousCart
+      .map((cartItem) =>
+        cartItem.cartKey === cartKey
+          ? {
+              ...cartItem,
+              quantity: cartItem.quantity + change,
+            }
+          : cartItem
       )
-    );
-  };
+      .filter((cartItem) => cartItem.quantity > 0)
+  );
+};
+
+// Remove item from cart
+const removeFromCart = (cartKey: string) => {
+  setCart((previousCart) =>
+    previousCart.filter(
+      (cartItem) => cartItem.cartKey !== cartKey
+    )
+  );
+};
 
   // Calculate cart count
   const cartCount = cart.reduce(
@@ -96,12 +136,20 @@ function App() {
     0
   );
 
-  // Calculate cart total
-  const cartTotal = cart.reduce(
-    (total, item) =>
-      total + item.item.price * item.quantity,
-    0
-  );
+  // Calculate cart total including add-ons
+const cartTotal = cart.reduce(
+  (total, cartItem) => {
+    const addonTotal = cartItem.addons.reduce(
+      (sum, addon) => sum + addon.price,
+      0
+    );
+
+    return total +
+      (Number(cartItem.item.price) + addonTotal) *
+      cartItem.quantity;
+  },
+  0
+);
 
   // Load shops from API
   useEffect(() => {
@@ -140,90 +188,162 @@ function App() {
   return (
     <main className="app-shell">
 
-      {/* LEFT MENU PANEL */}
-      <aside className="menu-sidebar">
+{/* LEFT MENU PANEL */}
+<aside className="menu-sidebar">
 
-        <div className="sidebar-header">
-          <h2>Backyard Shopping</h2>
-          <p>Discover local food and shops</p>
-        </div>
+  <div className="sidebar-header">
+    <h2>Backyard Shopping</h2>
+    <p>Discover local food and shops</p>
+  </div>
 
-        {loading && (
-          <p className="sidebar-message">Loading menu...</p>
-        )}
+  {loading && (
+    <p className="sidebar-message">Loading menu...</p>
+  )}
 
-        {error && (
-          <p className="sidebar-error">{error}</p>
-        )}
+  {error && (
+    <p className="sidebar-error">{error}</p>
+  )}
 
-        {!loading && !error && restaurant && (
-          <>
-            <div className="restaurant-info">
-              <span className="restaurant-label">
-                RESTAURANT
-              </span>
+  {!loading && !error && restaurant && (
+    <>
+      <div className="restaurant-info">
+        <span className="restaurant-label">RESTAURANT</span>
+        <h3>{restaurant.name}</h3>
+        <p>{restaurant.description}</p>
+        <small>{restaurant.address}</small>
+      </div>
 
-              <h3>{restaurant.name}</h3>
+      <div className="menu-heading">
+        <h3>Food Menu</h3>
+        <span>
+          {restaurant.items.filter(
+            (item) => item.is_available
+          ).length} items
+        </span>
+      </div>
 
-              <p>{restaurant.description}</p>
+      <div className="food-list">
+        {restaurant.items
+          .filter((item) => item.is_available)
+          .map((item) => (
+            <div className="food-card" key={item.id}>
+              <div className="food-card-content">
+                <div>
+                  <h4>{item.name}</h4>
+                  <p>{item.description}</p>
+                </div>
 
-              <small>{restaurant.address}</small>
-            </div>
+                <div className="food-card-bottom">
+                  <strong>
+                    ${Number(item.price).toFixed(2)}
+                  </strong>
 
-            <div className="menu-heading">
-              <h3>Food Menu</h3>
-
-              <span>
-                {restaurant.items.filter(
-                  (item) => item.is_available
-                ).length} items
-              </span>
-            </div>
-
-            <div className="food-list">
-              {restaurant.items
-                .filter((item) => item.is_available)
-                .map((item) => (
                   <button
-                    className="food-card"
-                    key={item.id}
-                    onClick={() =>
-                      addToCart(item, restaurant.name)
-                    }
-                    title={`Add ${item.name} to cart`}
+                    className="addon-confirm-button"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setSelectedAddons([]);
+                    }}
                   >
-                    <div className="food-card-content">
-                      <div>
-                        <h4>{item.name}</h4>
-                        <p>{item.description}</p>
-                      </div>
-
-                      <div className="food-card-bottom">
-                        <strong>
-                          ${Number(item.price).toFixed(2)}
-                        </strong>
-
-                        <span className="add-item">
-                          + Add
-                        </span>
-                      </div>
-                    </div>
+                    Customize & Add
                   </button>
-                ))}
+                </div>
+              </div>
+
+              {selectedItem?.id === item.id && (
+                <div className="addons-section">
+                  <h4>Choose Your Add-ons</h4>
+
+                  {ADDON_OPTIONS.map((addon) => (
+                    <div
+                      className="addon-option"
+                      key={addon.name}
+                    >
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selectedAddons.some(
+                            (selected) =>
+                              selected.name === addon.name
+                          )}
+                          onChange={() => {
+                            setSelectedAddons((previous) =>
+                              previous.some(
+                                (selected) =>
+                                  selected.name === addon.name
+                              )
+                                ? previous.filter(
+                                    (selected) =>
+                                      selected.name !== addon.name
+                                  )
+                                : [...previous, addon]
+                            );
+                          }}
+                        />
+                        {addon.name}
+                      </label>
+
+                      <span className="addon-price">
+                        +${addon.price.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+
+                  <div className="addon-total">
+                    <span>Extra Charges:</span>
+                    <span>
+                      ${selectedAddons
+                        .reduce(
+                          (sum, addon) => sum + addon.price,
+                          0
+                        )
+                        .toFixed(2)}
+                    </span>
+                  </div>
+
+                  <button
+                    className="addon-confirm-button"
+                    onClick={() => {
+                      addToCart(
+                        item,
+                        restaurant.name,
+                        selectedAddons
+                      );
+                      setSelectedItem(null);
+                      setSelectedAddons([]);
+                    }}
+                  >
+                    Add to Cart
+                  </button>
+
+                  <button
+                    className="remove-item"
+                    onClick={() => {
+                      setSelectedItem(null);
+                      setSelectedAddons([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
-          </>
-        )}
+          ))}
+      </div>
+    </>
+  )}
 
-        {!loading && !error && !restaurant && (
-          <p className="sidebar-message">
-            No restaurants are currently available.
-          </p>
-        )}
+  {!loading && !error && !restaurant && (
+    <p className="sidebar-message">
+      No restaurants are currently available.
+    </p>
+  )}
 
-        <div className="sidebar-footer">
-          <span>Backyard Shopping System</span>
-        </div>
-      </aside>
+  <div className="sidebar-footer">
+    <span>Backyard Shopping System</span>
+  </div>
+
+</aside>
 
       {/* MAP AREA */}
       <section className="map-section">
@@ -311,19 +431,29 @@ function App() {
                   cart.map((cartItem) => (
                     <div
                       className="cart-item"
-                      key={cartItem.item.id}
+                      key={cartItem.cartKey}
                     >
                       <div className="cart-item-info">
                         <h4>{cartItem.item.name}</h4>
 
                         <p>{cartItem.shopName}</p>
-
+            {cartItem.addons.length > 0 && (
+              <p>
+                  Extras:{" "}
+                  {cartItem.addons
+                  .map((addon) => addon.name)
+                  .join(", ")}
+                </p>
+)}
                         <strong>
                           $
-                          {(
-                            cartItem.item.price *
-                            cartItem.quantity
-                          ).toFixed(2)}
+                        {(
+  (Number(cartItem.item.price) +
+    cartItem.addons.reduce(
+      (sum, addon) => sum + addon.price,
+      0
+    )) * cartItem.quantity
+).toFixed(2)}
                         </strong>
                       </div>
 
@@ -332,7 +462,7 @@ function App() {
                           <button
                             onClick={() =>
                               updateQuantity(
-                                cartItem.item.id,
+                                cartItem.cartKey,
                                 -1
                               )
                             }
@@ -346,7 +476,7 @@ function App() {
                           <button
                             onClick={() =>
                               updateQuantity(
-                                cartItem.item.id,
+                                cartItem.cartKey,
                                 1
                               )
                             }
@@ -359,7 +489,7 @@ function App() {
                         <button
                           className="remove-item"
                           onClick={() =>
-                            removeFromCart(cartItem.item.id)
+                            removeFromCart(cartItem.cartKey)
                           }
                         >
                           Remove
@@ -402,3 +532,5 @@ function App() {
 }
 
 export default App;
+
+
