@@ -1,6 +1,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import MapView from "./components/MapView";
+
+import PaymentMethods, {
+  type PaymentMethod,
+} from "./components/PaymentMethods";
+
 import { fetchShops } from "./services/shopService";
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
@@ -35,6 +40,8 @@ function App() {
   const [toast, setToast] = useState("");
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
+
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -401,6 +408,22 @@ const cartTotal = cart.reduce(
               onClick={(event) => event.stopPropagation()}
             >
 
+
+
+               {showPaymentMethods ? (
+                <PaymentMethods
+                 total={cartTotal}
+                 onBack={() => setShowPaymentMethods(false)}
+                 onConfirm={(method: PaymentMethod) => {
+                 alert(
+                    `You selected ${method}. Actual payment processing is not available yet.`
+                 );
+              }}
+            />
+          ) : (
+            <>
+
+
               {/* CART HEADER */}
               <div className="cart-header">
                 <div>
@@ -512,16 +535,13 @@ const cartTotal = cart.reduce(
                   </div>
 
                   <button
-                    className="checkout-button"
-                    onClick={() =>
-                      alert(
-                        "Checkout will be implemented in the next phase."
-                      )
-                    }
-                  >
-                    Proceed to Checkout
-                  </button>
+                     className="checkout-button"
+                     onClick={() => setShowPaymentMethods(true)}>
+                     Proceed to Checkout
+                   </button>
                 </div>
+              )}
+              </>
               )}
             </aside>
           </div>

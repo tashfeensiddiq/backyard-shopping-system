@@ -1,0 +1,111 @@
+
+.payment-container {
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.payment-container h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  color: #202b3c;
+}
+
+.payment-description {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 22px;
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.payment-option:hover {
+  border-color: #2563eb;
+}
+
+.payment-option.selected {
+  border: 2px solid #2563eb;
+  background: #f8faff;
+}
+
+.payment-option input {
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.payment-logo {
+  min-width: 48px;
+  font-weight: bold;
+  font-size: 17px;
+  text-align: center;
+}
+
+.payment-logo.paypal {
+  color: #003087;
+}
+
+.payment-logo.visa {
+  color: #1434cb;
+}
+
+.payment-logo.apple-pay {
+  color: #111;
+}
+
+.payment-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #202b3c;
+}
+
+.payment-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 25px 0 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.payment-total strong {
+  color: #2563eb;
+}
+
+.payment-confirm-button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.payment-confirm-button:hover {
+  background: #1d4ed8;
+}
+
+.payment-back-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: none;
+  background: white;
+  color: #2563eb;
+  font-weight: bold;
+  cursor: pointer;
+}
