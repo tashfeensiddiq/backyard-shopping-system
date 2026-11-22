@@ -1,3 +1,4 @@
+
 * {
   box-sizing: border-box;
 }
@@ -438,7 +439,6 @@
 }
 #Test
 
-
 .cart-total {
   display: flex;
   justify-content: space-between;
@@ -505,3 +505,83 @@
     max-width: 280px;
   }
 }
+
+/* FOOD ADD-ONS SECTION */
+
+.addons-section {
+  margin-top: 12px;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8faff;
+  border-radius: 8px;
+}
+
+.addons-section h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #202b3c;
+}
+
+.addon-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #555;
+}
+
+.addon-option label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.addon-option input {
+  accent-color: #2563eb;
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
+
+.addon-price {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.addon-confirm-button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border: none;
+  border-radius: 7px;
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.addon-confirm-button:hover {
+  background: #1d4ed8;
+}
+
+.addon-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+  font-weight: bold;
+  color: #202b3c;
+}
+
+.food-card-bottom .addon-confirm-button {
+  width: auto;
+  margin-top: 0;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+
