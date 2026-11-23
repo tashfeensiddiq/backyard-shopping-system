@@ -1,19 +1,114 @@
 
+/* =========================================
+   BACKYARD SHOPPING - CHECKOUT DESIGN
+   ========================================= */
+
 .payment-container {
-  padding: 22px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 25px;
+  box-sizing: border-box;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  background: #ffffff;
+  color: #263449;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #5eb9e2 transparent;
 }
 
-.payment-container h3 {
-  margin: 0 0 8px;
+.payment-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.payment-container::-webkit-scrollbar-thumb {
+  background: #508ad1;
+  border-radius: 10px;
+}
+
+/* SECTION HEADINGS */
+
+.delivery-section {
+  margin-bottom: 30px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #46abb0;
+}
+
+.delivery-section h3,
+.payment-method-section h3 {
+  margin: 0 0 9px;
   font-size: 19px;
-  color: #202b3c;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+  color: #2b3c74;
 }
 
 .payment-description {
+  margin: 0 0 21px;
   font-size: 13px;
-  color: #777;
-  margin-bottom: 22px;
+  line-height: 1.6;
+  color: #141514;
+}
+
+/* DELIVERY ADDRESS FORM */
+
+.delivery-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px 13px;
+}
+
+.delivery-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.delivery-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.delivery-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #34445c;
+}
+
+.delivery-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  outline: none;
+  background: #fbfcfe;
+  color: #263449;
+  transition: all 0.2s ease;
+}
+
+.delivery-field input:hover {
+  border-color: #b8c9e5;
+}
+
+.delivery-field input:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.09);
+}
+
+.delivery-field input::placeholder {
+  color: #a0aaba;
+}
+
+/* PAYMENT METHODS */
+
+.payment-method-section {
+  margin-top: 26px;
+  margin-bottom: 25px;
 }
 
 .payment-options {
@@ -26,86 +121,186 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 9px;
+  min-height: 58px;
+  padding: 14px 16px;
+  border: 1px solid #ffffff;
+  border-radius: 11px;
+  background: #fbfbfb;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s ease;
 }
 
 .payment-option:hover {
-  border-color: #2563eb;
+  border-color: #b3ae11;
+  background: #f8faff;
+  transform: translateY(-1px);
 }
 
 .payment-option.selected {
-  border: 2px solid #2563eb;
-  background: #f8faff;
+  border: 1.5px solid #3ebed2;
+  background: #6cd5e8;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.07);
 }
 
 .payment-option input {
-  accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
+  accent-color: #090909;
   cursor: pointer;
-}
-
-.payment-logo {
-  min-width: 48px;
-  font-weight: bold;
-  font-size: 17px;
-  text-align: center;
-}
-
-.payment-logo.paypal {
-  color: #003087;
-}
-
-.payment-logo.visa {
-  color: #1434cb;
-}
-
-.payment-logo.apple-pay {
-  color: #111;
 }
 
 .payment-name {
   font-size: 14px;
-  font-weight: bold;
-  color: #202b3c;
+  font-weight: 700;
+  color: #2009a0;
 }
+
+/* TOTAL AMOUNT */
 
 .payment-total {
   display: flex;
   justify-content: space-between;
-  margin: 25px 0 18px;
-  padding-top: 18px;
-  border-top: 1px solid #e5e7eb;
+  align-items: center;
+  margin: 25px 0 19px;
+  padding: 20px 0;
+  border-top: 1px solid #8c290a;
+  border-bottom: 1px solid #8c290a;
+  font-size: 14px;
+  font-weight: 650;
+  color: #1644db;
 }
 
 .payment-total strong {
   color: #2563eb;
+  font-size: 20px;
+  font-weight: 750;
 }
+
+/* CONFIRM PAYMENT BUTTON */
 
 .payment-confirm-button {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: white;
-  font-weight: bold;
+  border-radius: 10px;
+  background: #eb8b25;
+  color: #070707;
+  font-size: 14px;
+  font-weight: 750;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.17);
+  transition: all 0.2s ease;
 }
 
 .payment-confirm-button:hover {
-  background: #1d4ed8;
+  background: #1dd8b9;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.22);
 }
+
+.payment-confirm-button:active {
+  transform: scale(0.99);
+}
+
+/* BACK TO CART BUTTON */
 
 .payment-back-button {
   width: 100%;
-  margin-top: 12px;
-  padding: 12px;
-  border: none;
-  background: white;
-  color: #2563eb;
-  font-weight: bold;
+  margin-top: 13px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #eb8b25;
+  color: #0d0d0d;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-back-button:hover {
+  background: #1dd8b9;
+  border-color: #b8c9e5;
+}
+
+/* MOBILE RESPONSIVE */
+
+@media (max-width: 480px) {
+  .payment-container {
+    padding: 18px;
+  }
+
+  .delivery-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-field.full-width {
+    grid-column: auto;
+  }
+
+  .delivery-section h3,
+  .payment-method-section h3 {
+    font-size: 17px;
+  }
+}
+
+
+/* Consistent checkout finish */
+.payment-container {
+  background: #c5def5;
+  color: #ffffff;
+  padding: 25px 24px 28px;
+  scrollbar-color: #47c4c0 transparent;
+}
+
+.delivery-section {
+  padding: 21px;
+  margin: 0 0 25px;
+  border: 1px solid #0f4ea6;
+  border-radius: 15px;
+  background: #98ddee;
+}
+
+.delivery-section h3,
+.payment-method-section h3 {
+  color: #070707;
+  font-size: 19px;
+}
+
+.delivery-field input {
+  background: #ffffff;
+  border-color: #114d92;
+  border-radius: 9px;
+}
+
+.payment-method-section {
+  padding: 0 2px;
+}
+
+.payment-option {
+  border-radius: 11px;
+  min-height: 60px;
+}
+
+.payment-total {
+  margin-top: 24px;
+}
+
+.payment-confirm-button {
+  min-height: 49px;
+  border-radius: 10px;
+}
+
+.payment-back-button {
+  min-height: 46px;
+}
+
+@media (max-width: 480px) {
+  .payment-container {
+    padding: 17px;
+  }
+
+  .delivery-section {
+    padding: 16px;
+  }
 }

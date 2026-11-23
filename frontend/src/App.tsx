@@ -1,11 +1,9 @@
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
-
 import PaymentMethods, {
   type PaymentMethod,
+  type DeliveryAddress,
 } from "./components/PaymentMethods";
-
 import { fetchShops } from "./services/shopService";
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
@@ -23,16 +21,62 @@ interface CartItem {
   cartKey: string;
 }
 
+const categories = ["All", "Burgers", "Pizza", "Sides", "Drinks", "Healthy"];
+
 const ADDON_OPTIONS: Addon[] = [
-  { name: "Extra Sauce", price: 0.50 },
-  { name: "Mayonnaise", price: 0.50 },
+  { name: "Extra Sauce", price: 0.5 },
+  { name: "Mayonnaise", price: 0.5 },
   { name: "Black Pepper", price: 0.25 },
   { name: "Sriracha Sauce", price: 0.75 },
-  { name: "Extra Cheese", price: 1.00 },
+  { name: "Extra Cheese", price: 1 },
 ];
+
+function getFoodEmoji(name: string) {
+  const value = name.toLowerCase();
+
+  if (value.includes("burger")) return "🍔";
+  if (value.includes("pizza")) return "🍕";
+  if (value.includes("fries") || value.includes("potato")) return "🍟";
+  if (
+    value.includes("drink") ||
+    value.includes("soda") ||
+    value.includes("juice")
+  ) {
+    return "🥤";
+  }
+  if (value.includes("salad") || value.includes("healthy")) return "🥗";
+  if (value.includes("popcorn")) return "🍿";
+
+  return "🍽️";
+}
+
+function getFoodCategory(name: string) {
+  const value = name.toLowerCase();
+
+  if (value.includes("burger")) return "Burgers";
+  if (value.includes("pizza")) return "Pizza";
+  if (
+    value.includes("fries") ||
+    value.includes("potato") ||
+    value.includes("popcorn")
+  ) {
+    return "Sides";
+  }
+  if (
+    value.includes("drink") ||
+    value.includes("soda") ||
+    value.includes("juice")
+  ) {
+    return "Drinks";
+  }
+  if (value.includes("salad") || value.includes("healthy")) return "Healthy";
+
+  return "All";
+}
 
 function App() {
   const [shops, setShops] = useState<Shop[]>([]);
+  const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -40,141 +84,138 @@ function App() {
   const [toast, setToast] = useState("");
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
-
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const restaurants = shops.filter(
-    (shop) => shop.category === "Restaurant"
+    (shop) => shop.category === "Restaurant" && shop.is_active
   );
 
-  const restaurant = restaurants[0];
+  const restaurant =
+    restaurants.find((shop) => shop.id === selectedShopId) ??
+    restaurants[0] ??
+    null;
 
-// Add item and selected extras to cart
-const addToCart = (
-  item: FoodItem,
-  shopName: string,
-  addons: Addon[]
-) => {
-  const cartKey = JSON.stringify([
-    item.id,
-    addons.map((addon) => addon.name).sort(),
-  ]);
+  const availableItems = useMemo(() => {
+    if (!restaurant) return [];
 
-  setCart((previousCart) => {
-    const existingItem = previousCart.find(
-      (cartItem) => cartItem.cartKey === cartKey
-    );
+    return restaurant.items.filter((item) => {
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesCategory =
+        activeCategory === "All" ||
+        getFoodCategory(item.name) === activeCategory;
 
-    if (existingItem) {
-      return previousCart.map((cartItem) =>
-        cartItem.cartKey === cartKey
-          ? {
-              ...cartItem,
-              quantity: cartItem.quantity + 1,
-            }
-          : cartItem
+      return item.is_available && matchesSearch && matchesCategory;
+    });
+  }, [restaurant, search, activeCategory]);
+
+  const addToCart = (
+    item: FoodItem,
+    shopName: string,
+    addons: Addon[] = []
+  ) => {
+    if (cart.length > 0 && cart[0].shopName !== shopName) {
+      alert(
+        `Your cart already contains items from ${cart[0].shopName}. Please complete or clear that order before choosing another restaurant.`
       );
+      return;
     }
 
-    return [
-      ...previousCart,
-      {
-        item,
-        quantity: 1,
-        shopName,
-        addons: [...addons],
-        cartKey,
-      },
-    ];
-  });
+    const cartKey = JSON.stringify([
+      item.id,
+      addons.map((addon) => addon.name).sort(),
+    ]);
 
-  const extraNames = addons.map((addon) => addon.name).join(", ");
+    setCart((previousCart) => {
+      const existingItem = previousCart.find(
+        (cartItem) => cartItem.cartKey === cartKey
+      );
 
-  setToast(
-    `${item.name} added to cart${
-      extraNames ? ` with ${extraNames}` : ""
-    }`
-  );
+      if (existingItem) {
+        return previousCart.map((cartItem) =>
+          cartItem.cartKey === cartKey
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      }
 
-  if (toastTimer.current) {
-    clearTimeout(toastTimer.current);
-  }
+      return [
+        ...previousCart,
+        {
+          item,
+          quantity: 1,
+          shopName,
+          addons: [...addons],
+          cartKey,
+        },
+      ];
+    });
 
-  toastTimer.current = setTimeout(() => {
-    setToast("");
-    toastTimer.current = null;
-  }, 2500);
-};
+    const extraNames = addons.map((addon) => addon.name).join(", ");
+    setToast(
+      `${item.name} added to cart${extraNames ? ` with ${extraNames}` : ""}`
+    );
 
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current);
+    }
 
-  // Update item quantity
-const updateQuantity = (
-  cartKey: string,
-  change: number
-) => {
-  setCart((previousCart) =>
-    previousCart
-      .map((cartItem) =>
-        cartItem.cartKey === cartKey
-          ? {
-              ...cartItem,
-              quantity: cartItem.quantity + change,
-            }
-          : cartItem
-      )
-      .filter((cartItem) => cartItem.quantity > 0)
-  );
-};
+    toastTimer.current = setTimeout(() => {
+      setToast("");
+      toastTimer.current = null;
+    }, 2500);
+  };
 
-// Remove item from cart
-const removeFromCart = (cartKey: string) => {
-  setCart((previousCart) =>
-    previousCart.filter(
-      (cartItem) => cartItem.cartKey !== cartKey
-    )
-  );
-};
+  const updateQuantity = (cartKey: string, change: number) => {
+    setCart((previousCart) =>
+      previousCart
+        .map((cartItem) =>
+          cartItem.cartKey === cartKey
+            ? { ...cartItem, quantity: cartItem.quantity + change }
+            : cartItem
+        )
+        .filter((cartItem) => cartItem.quantity > 0)
+    );
+  };
 
-  // Calculate cart count
+  const removeFromCart = (cartKey: string) => {
+    setCart((previousCart) =>
+      previousCart.filter((cartItem) => cartItem.cartKey !== cartKey)
+    );
+  };
+
   const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
+    (total, cartItem) => total + cartItem.quantity,
     0
   );
 
-  // Calculate cart total including add-ons
-const cartTotal = cart.reduce(
-  (total, cartItem) => {
+  const cartTotal = cart.reduce((total, cartItem) => {
     const addonTotal = cartItem.addons.reduce(
       (sum, addon) => sum + addon.price,
       0
     );
 
-    return total +
-      (Number(cartItem.item.price) + addonTotal) *
-      cartItem.quantity;
-  },
-  0
-);
+    return (
+      total +
+      (Number(cartItem.item.price) + addonTotal) * cartItem.quantity
+    );
+  }, 0);
 
-  // Load shops from API
   useEffect(() => {
     const loadShops = async () => {
       try {
         setLoading(true);
         setError("");
-
         const data = await fetchShops();
-
-        console.log("Shops received from API:", data);
-
         setShops(data);
       } catch (err) {
         console.error("Shop loading error:", err);
-        setError(
-          "Unable to load shops. Please check the backend connection."
-        );
+        setError("Unable to load shops. Please check the backend connection.");
       } finally {
         setLoading(false);
       }
@@ -183,374 +224,480 @@ const cartTotal = cart.reduce(
     loadShops();
   }, []);
 
-  // Clear notification timer when component unmounts
   useEffect(() => {
     return () => {
-      if (toastTimer.current) {
-        clearTimeout(toastTimer.current);
-      }
+      if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
+  const openCustomization = (item: FoodItem) => {
+    setSelectedItem(item);
+    setSelectedAddons([]);
+  };
+
+  const confirmCustomization = () => {
+    if (!selectedItem || !restaurant) return;
+
+    addToCart(selectedItem, restaurant.name, selectedAddons);
+    setSelectedItem(null);
+    setSelectedAddons([]);
+  };
+
   return (
     <main className="app-shell">
-
-{/* LEFT MENU PANEL */}
-<aside className="menu-sidebar">
-
-  <div className="sidebar-header">
-    <h2>Backyard Shopping</h2>
-    <p>Discover local food and shops</p>
-  </div>
-
-  {loading && (
-    <p className="sidebar-message">Loading menu...</p>
-  )}
-
-  {error && (
-    <p className="sidebar-error">{error}</p>
-  )}
-
-  {!loading && !error && restaurant && (
-    <>
-      <div className="restaurant-info">
-        <span className="restaurant-label">RESTAURANT</span>
-        <h3>{restaurant.name}</h3>
-        <p>{restaurant.description}</p>
-        <small>{restaurant.address}</small>
-      </div>
-
-      <div className="menu-heading">
-        <h3>Food Menu</h3>
-        <span>
-          {restaurant.items.filter(
-            (item) => item.is_available
-          ).length} items
-        </span>
-      </div>
-
-      <div className="food-list">
-        {restaurant.items
-          .filter((item) => item.is_available)
-          .map((item) => (
-            <div className="food-card" key={item.id}>
-              <div className="food-card-content">
-                <div>
-                  <h4>{item.name}</h4>
-                  <p>{item.description}</p>
-                </div>
-
-                <div className="food-card-bottom">
-                  <strong>
-                    ${Number(item.price).toFixed(2)}
-                  </strong>
-
-                  <button
-                    className="addon-confirm-button"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setSelectedAddons([]);
-                    }}
-                  >
-                    Customize & Add
-                  </button>
-                </div>
-              </div>
-
-              {selectedItem?.id === item.id && (
-                <div className="addons-section">
-                  <h4>Choose Your Add-ons</h4>
-
-                  {ADDON_OPTIONS.map((addon) => (
-                    <div
-                      className="addon-option"
-                      key={addon.name}
-                    >
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={selectedAddons.some(
-                            (selected) =>
-                              selected.name === addon.name
-                          )}
-                          onChange={() => {
-                            setSelectedAddons((previous) =>
-                              previous.some(
-                                (selected) =>
-                                  selected.name === addon.name
-                              )
-                                ? previous.filter(
-                                    (selected) =>
-                                      selected.name !== addon.name
-                                  )
-                                : [...previous, addon]
-                            );
-                          }}
-                        />
-                        {addon.name}
-                      </label>
-
-                      <span className="addon-price">
-                        +${addon.price.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-
-                  <div className="addon-total">
-                    <span>Extra Charges:</span>
-                    <span>
-                      ${selectedAddons
-                        .reduce(
-                          (sum, addon) => sum + addon.price,
-                          0
-                        )
-                        .toFixed(2)}
-                    </span>
-                  </div>
-
-                  <button
-                    className="addon-confirm-button"
-                    onClick={() => {
-                      addToCart(
-                        item,
-                        restaurant.name,
-                        selectedAddons
-                      );
-                      setSelectedItem(null);
-                      setSelectedAddons([]);
-                    }}
-                  >
-                    Add to Cart
-                  </button>
-
-                  <button
-                    className="remove-item"
-                    onClick={() => {
-                      setSelectedItem(null);
-                      setSelectedAddons([]);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-      </div>
-    </>
-  )}
-
-  {!loading && !error && !restaurant && (
-    <p className="sidebar-message">
-      No restaurants are currently available.
-    </p>
-  )}
-
-  <div className="sidebar-footer">
-    <span>Backyard Shopping System</span>
-  </div>
-
-</aside>
-
-      {/* MAP AREA */}
-      <section className="map-section">
-
-        {/* HEADER */}
-        <header className="map-header">
-          <div>
-            <h1>Explore Local Shops</h1>
-            <p>
-              Find shops and restaurants around St. John's.
-            </p>
-          </div>
-
-          <button
-            className="cart-button"
-            onClick={() => setCartOpen(true)}
-          >
-            🛒 Cart
-
-            <span className="cart-count">
-              {cartCount}
-            </span>
-          </button>
-        </header>
-
-        {/* TOAST NOTIFICATION */}
-        {toast && (
-          <div
-            className="toast-notification"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="toast-icon">✓</span>
-
-            <div className="toast-content">
-              <strong>Added to cart!</strong>
-              <p>{toast}</p>
-            </div>
-          </div>
-        )}
-
-        {/* MAP */}
-        <div className="map-area">
-          <MapView shops={shops} />
+      <header className="top-header">
+        <div className="brand">
+          <h1>
+            🛍 Backyard <span>Shopping</span>
+          </h1>
+          <p>Your neighbourhood, your marketplace</p>
         </div>
 
-        {/* CART OVERLAY */}
-        {cartOpen && (
-          <div
-            className="cart-overlay"
-            onClick={() => setCartOpen(false)}
-          >
-            <aside
-              className="cart-panel"
-              onClick={(event) => event.stopPropagation()}
-            >
+        <button
+          className="top-cart-button"
+          onClick={() => {
+            setShowPaymentMethods(false);
+            setCartOpen(true);
+          }}
+        >
+          🛒 Cart <span>{cartCount}</span>
+        </button>
+      </header>
 
+      <div className="dashboard-layout">
+        <section className="main-content">
+          <section className="welcome-banner">
+            <div className="welcome-copy">
+              <span>LOCAL FAVORITES · FRESH PICKS</span>
+              <h2>
+                Good food, closer
+                <br />
+                to home. 💙
+              </h2>
+              <p>Discover local shops and delicious favourites.</p>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("food-menu")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                Explore menu →
+              </button>
+            </div>
+            <div className="welcome-illustration">🥗</div>
+          </section>
 
+          {loading && (
+            <p className="status-message">Loading local favourites...</p>
+          )}
+          {error && <p className="status-error">{error}</p>}
 
-               {showPaymentMethods ? (
-                <PaymentMethods
-                 total={cartTotal}
-                 onBack={() => setShowPaymentMethods(false)}
-                 onConfirm={(method: PaymentMethod) => {
-                 alert(
-                    `You selected ${method}. Actual payment processing is not available yet.`
-                 );
-              }}
-            />
-          ) : (
+          {!loading && !error && (
             <>
+              <input
+                className="food-search"
+                type="search"
+                placeholder="⌕  Search burgers, pizza, drinks..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
 
-
-              {/* CART HEADER */}
-              <div className="cart-header">
-                <div>
-                  <h2>Shopping Cart</h2>
-                  <p>{cartCount} items added</p>
-                </div>
-
-                <button
-                  className="close-cart"
-                  onClick={() => setCartOpen(false)}
-                  aria-label="Close cart"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* CART ITEMS */}
-              <div className="cart-items">
-                {cart.length === 0 ? (
-                  <div className="empty-cart">
-                    <div>🛒</div>
-                    <h3>Your cart is empty</h3>
-                    <p>
-                      Add food items from the left menu.
-                    </p>
-                  </div>
-                ) : (
-                  cart.map((cartItem) => (
-                    <div
-                      className="cart-item"
-                      key={cartItem.cartKey}
-                    >
-                      <div className="cart-item-info">
-                        <h4>{cartItem.item.name}</h4>
-
-                        <p>{cartItem.shopName}</p>
-            {cartItem.addons.length > 0 && (
-              <p>
-                  Extras:{" "}
-                  {cartItem.addons
-                  .map((addon) => addon.name)
-                  .join(", ")}
-                </p>
-)}
-                        <strong>
-                          $
-                        {(
-  (Number(cartItem.item.price) +
-    cartItem.addons.reduce(
-      (sum, addon) => sum + addon.price,
-      0
-    )) * cartItem.quantity
-).toFixed(2)}
-                        </strong>
-                      </div>
-
-                      <div className="cart-item-actions">
-                        <div className="quantity-control">
-                          <button
-                            onClick={() =>
-                              updateQuantity(
-                                cartItem.cartKey,
-                                -1
-                              )
-                            }
-                            aria-label="Decrease quantity"
-                          >
-                            −
-                          </button>
-
-                          <span>{cartItem.quantity}</span>
-
-                          <button
-                            onClick={() =>
-                              updateQuantity(
-                                cartItem.cartKey,
-                                1
-                              )
-                            }
-                            aria-label="Increase quantity"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        <button
-                          className="remove-item"
-                          onClick={() =>
-                            removeFromCart(cartItem.cartKey)
-                          }
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* CART FOOTER */}
-              {cart.length > 0 && (
-                <div className="cart-footer">
-                  <div className="cart-total">
-                    <span>Total</span>
-
-                    <strong>
-                      ${cartTotal.toFixed(2)}
-                    </strong>
-                  </div>
-
+              <div className="category-filters">
+                {categories.map((category) => (
                   <button
-                     className="checkout-button"
-                     onClick={() => setShowPaymentMethods(true)}>
-                     Proceed to Checkout
-                   </button>
-                </div>
+                    key={category}
+                    className={activeCategory === category ? "active" : ""}
+                    onClick={() => setActiveCategory(category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+
+              <div className="menu-heading" id="food-menu">
+                <h3>Popular near you</h3>
+                <span>{availableItems.length} items</span>
+              </div>
+
+              {!restaurant ? (
+                <p className="status-message">
+                  No restaurants are currently available.
+                </p>
+              ) : (
+                <>
+                  <div className="restaurant-selector">
+                    <label htmlFor="restaurant-select">
+                      Showing menu from
+                    </label>
+                    <select
+                      id="restaurant-select"
+                      value={restaurant.id}
+                      onChange={(event) => {
+                        setSelectedShopId(Number(event.target.value));
+                        setSelectedItem(null);
+                        setSelectedAddons([]);
+                      }}
+                    >
+                      {restaurants.map((shop) => (
+                        <option key={shop.id} value={shop.id}>
+                          {shop.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="food-grid">
+                    {availableItems.map((item, index) => (
+                      <article
+                        className={`food-card food-color-${index % 6}`}
+                        key={item.id}
+                      >
+                        <div className="food-emoji">
+                          {getFoodEmoji(item.name)}
+                        </div>
+                        <div className="food-card-content">
+                          <h4>{item.name}</h4>
+                          <p>
+                            {item.description || "Freshly prepared for you"}
+                          </p>
+                          <div className="food-card-bottom">
+                            <strong>
+                              ${Number(item.price).toFixed(2)}
+                            </strong>
+                            <button
+                              className="add-item"
+                              onClick={() => openCustomization(item)}
+                            >
+                              + Customize
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  {availableItems.length === 0 && (
+                    <p className="status-message">
+                      No items match your search. Try another category.
+                    </p>
+                  )}
+                </>
               )}
-              </>
-              )}
-            </aside>
+            </>
+          )}
+
+          <footer className="page-footer">
+            Backyard Shopping · Supporting local businesses 💙
+          </footer>
+        </section>
+
+        <aside className="right-sidebar">
+          <section className="side-card map-card">
+            <h3>📍 Explore Local Shops</h3>
+            <div className="mini-map">
+              <MapView
+                shops={restaurants}
+                selectedShopId={restaurant?.id ?? null}
+                onSelectShop={(shop) => setSelectedShopId(shop.id)}
+              />
+            </div>
+            <p>
+              {restaurant
+                ? `${restaurant.name} · ${restaurant.address}`
+                : "Explore nearby restaurants"}
+            </p>
+          </section>
+
+          <section className="side-card cart-summary">
+            <h3>🛍 Your Shopping Cart</h3>
+            {cart.length === 0 ? (
+              <p>Your cart is empty. Add something delicious!</p>
+            ) : (
+              <div className="summary-items">
+                {cart.map((cartItem) => {
+                  const addonTotal = cartItem.addons.reduce(
+                    (sum, addon) => sum + addon.price,
+                    0
+                  );
+
+                  return (
+                    <div className="summary-item" key={cartItem.cartKey}>
+                      <span>
+                        {cartItem.item.name} × {cartItem.quantity}
+                      </span>
+                      <strong>
+                        $
+                        {(
+                          (Number(cartItem.item.price) + addonTotal) *
+                          cartItem.quantity
+                        ).toFixed(2)}
+                      </strong>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="summary-total">
+              <strong>Total</strong>
+              <strong>${cartTotal.toFixed(2)}</strong>
+            </div>
+            <button
+              className="checkout-button"
+              onClick={() => {
+                setShowPaymentMethods(false);
+                setCartOpen(true);
+              }}
+              disabled={cart.length === 0}
+            >
+              Proceed to Checkout
+            </button>
+            <small>Demo checkout · No real payment</small>
+          </section>
+        </aside>
+      </div>
+
+      {toast && (
+        <div
+          className="toast-notification"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="toast-icon">✓</span>
+          <div className="toast-content">
+            <strong>Added to cart!</strong>
+            <p>{toast}</p>
           </div>
-        )}
-      </section>
+        </div>
+      )}
+
+      {selectedItem && (
+        <div
+          className="cart-overlay"
+          onClick={() => {
+            setSelectedItem(null);
+            setSelectedAddons([]);
+          }}
+        >
+          <section
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="cart-header">
+              <div>
+                <h2>Customize your item</h2>
+                <p>{selectedItem.name}</p>
+              </div>
+              <button
+                className="close-cart"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+                aria-label="Close customization"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="cart-items">
+              <h3>Choose your add-ons</h3>
+              {ADDON_OPTIONS.map((addon) => {
+                const checked = selectedAddons.some(
+                  (selected) => selected.name === addon.name
+                );
+
+                return (
+                  <div className="addon-option" key={addon.name}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedAddons((previous) =>
+                            checked
+                              ? previous.filter(
+                                  (selected) => selected.name !== addon.name
+                                )
+                              : [...previous, addon]
+                          );
+                        }}
+                      />
+                      {addon.name}
+                    </label>
+                    <span className="addon-price">
+                      +${addon.price.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+
+              <div className="addon-total">
+                <span>Item price:</span>
+                <strong>${Number(selectedItem.price).toFixed(2)}</strong>
+              </div>
+              <div className="addon-total">
+                <span>Extra charges:</span>
+                <strong>
+                  $
+                  {selectedAddons
+                    .reduce((sum, addon) => sum + addon.price, 0)
+                    .toFixed(2)}
+                </strong>
+              </div>
+            </div>
+
+            <div className="cart-footer">
+              <button
+                className="checkout-button"
+                onClick={confirmCustomization}
+              >
+                Add to Cart
+              </button>
+              <button
+                className="remove-item"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {cartOpen && (
+        <div className="cart-overlay" onClick={() => setCartOpen(false)}>
+          <aside
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {showPaymentMethods ? (
+              <PaymentMethods
+                total={cartTotal}
+                onBack={() => setShowPaymentMethods(false)}
+                onConfirm={(
+                  method: PaymentMethod,
+                  address: DeliveryAddress
+                ) => {
+                  alert(
+                    `Payment Method: ${method}\n` +
+                      `Customer: ${address.customerName}\n` +
+                      `Delivery Address: ${address.streetAddress}, ${address.city}, ${address.province}, ${address.countryRegion}\n` +
+                      `Postal Code: ${address.postalCode}`
+                  );
+                }}
+              />
+            ) : (
+              <>
+                <div className="cart-header">
+                  <div>
+                    <h2>Shopping Cart</h2>
+                    <p>{cartCount} items added</p>
+                  </div>
+                  <button
+                    className="close-cart"
+                    onClick={() => setCartOpen(false)}
+                    aria-label="Close cart"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="cart-items">
+                  {cart.length === 0 ? (
+                    <div className="empty-cart">
+                      <div>🛒</div>
+                      <h3>Your cart is empty</h3>
+                      <p>Add food items from the menu.</p>
+                    </div>
+                  ) : (
+                    cart.map((cartItem) => {
+                      const addonTotal = cartItem.addons.reduce(
+                        (sum, addon) => sum + addon.price,
+                        0
+                      );
+
+                      return (
+                        <div className="cart-item" key={cartItem.cartKey}>
+                          <div className="cart-item-info">
+                            <h4>{cartItem.item.name}</h4>
+                            <p>{cartItem.shopName}</p>
+                            {cartItem.addons.length > 0 && (
+                              <p>
+                                Extras:{" "}
+                                {cartItem.addons
+                                  .map((addon) => addon.name)
+                                  .join(", ")}
+                              </p>
+                            )}
+                            <strong>
+                              $
+                              {(
+                                (Number(cartItem.item.price) + addonTotal) *
+                                cartItem.quantity
+                              ).toFixed(2)}
+                            </strong>
+                          </div>
+
+                          <div className="cart-item-actions">
+                            <div className="quantity-control">
+                              <button
+                                onClick={() =>
+                                  updateQuantity(cartItem.cartKey, -1)
+                                }
+                                aria-label="Decrease quantity"
+                              >
+                                −
+                              </button>
+                              <span>{cartItem.quantity}</span>
+                              <button
+                                onClick={() =>
+                                  updateQuantity(cartItem.cartKey, 1)
+                                }
+                                aria-label="Increase quantity"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <button
+                              className="remove-item"
+                              onClick={() =>
+                                removeFromCart(cartItem.cartKey)
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {cart.length > 0 && (
+                  <div className="cart-footer">
+                    <div className="cart-total">
+                      <span>Total</span>
+                      <strong>${cartTotal.toFixed(2)}</strong>
+                    </div>
+                    <button
+                      className="checkout-button"
+                      onClick={() => setShowPaymentMethods(true)}
+                    >
+                      Proceed to Checkout
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </aside>
+        </div>
+      )}
     </main>
   );
 }
 
 export default App;
-
-
