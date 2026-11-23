@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import PaymentMethods, {
@@ -9,32 +8,69 @@ import { fetchShops } from "./services/shopService";
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
 
+interface Addon {
+  name: string;
+  price: number;
+}
+
 interface CartItem {
   item: FoodItem;
   quantity: number;
   shopName: string;
+  addons: Addon[];
+  cartKey: string;
 }
 
 const categories = ["All", "Burgers", "Pizza", "Sides", "Drinks", "Healthy"];
 
+const ADDON_OPTIONS: Addon[] = [
+  { name: "Extra Sauce", price: 0.5 },
+  { name: "Mayonnaise", price: 0.5 },
+  { name: "Black Pepper", price: 0.25 },
+  { name: "Sriracha Sauce", price: 0.75 },
+  { name: "Extra Cheese", price: 1 },
+];
+
 function getFoodEmoji(name: string) {
   const value = name.toLowerCase();
+
   if (value.includes("burger")) return "🍔";
   if (value.includes("pizza")) return "🍕";
   if (value.includes("fries") || value.includes("potato")) return "🍟";
-  if (value.includes("drink") || value.includes("soda") || value.includes("juice")) return "🥤";
+  if (
+    value.includes("drink") ||
+    value.includes("soda") ||
+    value.includes("juice")
+  ) {
+    return "🥤";
+  }
   if (value.includes("salad") || value.includes("healthy")) return "🥗";
   if (value.includes("popcorn")) return "🍿";
+
   return "🍽️";
 }
 
 function getFoodCategory(name: string) {
   const value = name.toLowerCase();
+
   if (value.includes("burger")) return "Burgers";
   if (value.includes("pizza")) return "Pizza";
-  if (value.includes("fries") || value.includes("potato") || value.includes("popcorn")) return "Sides";
-  if (value.includes("drink") || value.includes("soda") || value.includes("juice")) return "Drinks";
+  if (
+    value.includes("fries") ||
+    value.includes("potato") ||
+    value.includes("popcorn")
+  ) {
+    return "Sides";
+  }
+  if (
+    value.includes("drink") ||
+    value.includes("soda") ||
+    value.includes("juice")
+  ) {
+    return "Drinks";
+  }
   if (value.includes("salad") || value.includes("healthy")) return "Healthy";
+
   return "All";
 }
 
@@ -46,6 +82,8 @@ function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -65,7 +103,9 @@ function App() {
     if (!restaurant) return [];
 
     return restaurant.items.filter((item) => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
       const matchesCategory =
         activeCategory === "All" ||
         getFoodCategory(item.name) === activeCategory;
@@ -74,7 +114,11 @@ function App() {
     });
   }, [restaurant, search, activeCategory]);
 
-  const addToCart = (item: FoodItem, shopName: string) => {
+  const addToCart = (
+    item: FoodItem,
+    shopName: string,
+    addons: Addon[] = []
+  ) => {
     if (cart.length > 0 && cart[0].shopName !== shopName) {
       alert(
         `Your cart already contains items from ${cart[0].shopName}. Please complete or clear that order before choosing another restaurant.`
@@ -82,25 +126,44 @@ function App() {
       return;
     }
 
+    const cartKey = JSON.stringify([
+      item.id,
+      addons.map((addon) => addon.name).sort(),
+    ]);
+
     setCart((previousCart) => {
       const existingItem = previousCart.find(
-        (cartItem) => cartItem.item.id === item.id
+        (cartItem) => cartItem.cartKey === cartKey
       );
 
       if (existingItem) {
         return previousCart.map((cartItem) =>
-          cartItem.item.id === item.id
+          cartItem.cartKey === cartKey
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       }
 
-      return [...previousCart, { item, quantity: 1, shopName }];
+      return [
+        ...previousCart,
+        {
+          item,
+          quantity: 1,
+          shopName,
+          addons: [...addons],
+          cartKey,
+        },
+      ];
     });
 
-    setToast(`${item.name} added to cart`);
+    const extraNames = addons.map((addon) => addon.name).join(", ");
+    setToast(
+      `${item.name} added to cart${extraNames ? ` with ${extraNames}` : ""}`
+    );
 
-    if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current);
+    }
 
     toastTimer.current = setTimeout(() => {
       setToast("");
@@ -108,11 +171,11 @@ function App() {
     }, 2500);
   };
 
-  const updateQuantity = (itemId: number, change: number) => {
+  const updateQuantity = (cartKey: string, change: number) => {
     setCart((previousCart) =>
       previousCart
         .map((cartItem) =>
-          cartItem.item.id === itemId
+          cartItem.cartKey === cartKey
             ? { ...cartItem, quantity: cartItem.quantity + change }
             : cartItem
         )
@@ -120,17 +183,28 @@ function App() {
     );
   };
 
-  const removeFromCart = (itemId: number) => {
+  const removeFromCart = (cartKey: string) => {
     setCart((previousCart) =>
-      previousCart.filter((cartItem) => cartItem.item.id !== itemId)
+      previousCart.filter((cartItem) => cartItem.cartKey !== cartKey)
     );
   };
 
-  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = cart.reduce(
-    (total, item) => total + item.item.price * item.quantity,
+  const cartCount = cart.reduce(
+    (total, cartItem) => total + cartItem.quantity,
     0
   );
+
+  const cartTotal = cart.reduce((total, cartItem) => {
+    const addonTotal = cartItem.addons.reduce(
+      (sum, addon) => sum + addon.price,
+      0
+    );
+
+    return (
+      total +
+      (Number(cartItem.item.price) + addonTotal) * cartItem.quantity
+    );
+  }, 0);
 
   useEffect(() => {
     const loadShops = async () => {
@@ -138,7 +212,6 @@ function App() {
         setLoading(true);
         setError("");
         const data = await fetchShops();
-        console.log("Shops received from API:", data);
         setShops(data);
       } catch (err) {
         console.error("Shop loading error:", err);
@@ -157,15 +230,36 @@ function App() {
     };
   }, []);
 
+  const openCustomization = (item: FoodItem) => {
+    setSelectedItem(item);
+    setSelectedAddons([]);
+  };
+
+  const confirmCustomization = () => {
+    if (!selectedItem || !restaurant) return;
+
+    addToCart(selectedItem, restaurant.name, selectedAddons);
+    setSelectedItem(null);
+    setSelectedAddons([]);
+  };
+
   return (
     <main className="app-shell">
       <header className="top-header">
         <div className="brand">
-          <h1>🛍 Backyard <span>Shopping</span></h1>
+          <h1>
+            🛍 Backyard <span>Shopping</span>
+          </h1>
           <p>Your neighbourhood, your marketplace</p>
         </div>
 
-        <button className="top-cart-button" onClick={() => setCartOpen(true)}>
+        <button
+          className="top-cart-button"
+          onClick={() => {
+            setShowPaymentMethods(false);
+            setCartOpen(true);
+          }}
+        >
           🛒 Cart <span>{cartCount}</span>
         </button>
       </header>
@@ -175,16 +269,28 @@ function App() {
           <section className="welcome-banner">
             <div className="welcome-copy">
               <span>LOCAL FAVORITES · FRESH PICKS</span>
-              <h2>Good food, closer<br />to home. 💙</h2>
+              <h2>
+                Good food, closer
+                <br />
+                to home. 💙
+              </h2>
               <p>Discover local shops and delicious favourites.</p>
-              <button onClick={() => document.getElementById("food-menu")?.scrollIntoView({ behavior: "smooth" })}>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("food-menu")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
                 Explore menu →
               </button>
             </div>
             <div className="welcome-illustration">🥗</div>
           </section>
 
-          {loading && <p className="status-message">Loading local favourites...</p>}
+          {loading && (
+            <p className="status-message">Loading local favourites...</p>
+          )}
           {error && <p className="status-error">{error}</p>}
 
           {!loading && !error && (
@@ -215,45 +321,66 @@ function App() {
               </div>
 
               {!restaurant ? (
-                <p className="status-message">No restaurants are currently available.</p>
+                <p className="status-message">
+                  No restaurants are currently available.
+                </p>
               ) : (
                 <>
                   <div className="restaurant-selector">
-                    <label htmlFor="restaurant-select">Showing menu from</label>
+                    <label htmlFor="restaurant-select">
+                      Showing menu from
+                    </label>
                     <select
                       id="restaurant-select"
                       value={restaurant.id}
-                      onChange={(event) => setSelectedShopId(Number(event.target.value))}
+                      onChange={(event) => {
+                        setSelectedShopId(Number(event.target.value));
+                        setSelectedItem(null);
+                        setSelectedAddons([]);
+                      }}
                     >
                       {restaurants.map((shop) => (
-                        <option key={shop.id} value={shop.id}>{shop.name}</option>
+                        <option key={shop.id} value={shop.id}>
+                          {shop.name}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="food-grid">
                     {availableItems.map((item, index) => (
-                      <button
+                      <article
                         className={`food-card food-color-${index % 6}`}
                         key={item.id}
-                        onClick={() => addToCart(item, restaurant.name)}
-                        title={`Add ${item.name} to cart`}
                       >
-                        <div className="food-emoji">{getFoodEmoji(item.name)}</div>
+                        <div className="food-emoji">
+                          {getFoodEmoji(item.name)}
+                        </div>
                         <div className="food-card-content">
                           <h4>{item.name}</h4>
-                          <p>{item.description || "Freshly prepared for you"}</p>
+                          <p>
+                            {item.description || "Freshly prepared for you"}
+                          </p>
                           <div className="food-card-bottom">
-                            <strong>${Number(item.price).toFixed(2)}</strong>
-                            <span className="add-item">+ Add</span>
+                            <strong>
+                              ${Number(item.price).toFixed(2)}
+                            </strong>
+                            <button
+                              className="add-item"
+                              onClick={() => openCustomization(item)}
+                            >
+                              + Customize
+                            </button>
                           </div>
                         </div>
-                      </button>
+                      </article>
                     ))}
                   </div>
 
                   {availableItems.length === 0 && (
-                    <p className="status-message">No items match your search. Try another category.</p>
+                    <p className="status-message">
+                      No items match your search. Try another category.
+                    </p>
                   )}
                 </>
               )}
@@ -275,7 +402,11 @@ function App() {
                 onSelectShop={(shop) => setSelectedShopId(shop.id)}
               />
             </div>
-            <p>Harbour Bistro · East End, St. John's</p>
+            <p>
+              {restaurant
+                ? `${restaurant.name} · ${restaurant.address}`
+                : "Explore nearby restaurants"}
+            </p>
           </section>
 
           <section className="side-card cart-summary">
@@ -284,12 +415,27 @@ function App() {
               <p>Your cart is empty. Add something delicious!</p>
             ) : (
               <div className="summary-items">
-                {cart.map((cartItem) => (
-                  <div className="summary-item" key={cartItem.item.id}>
-                    <span>{cartItem.item.name} × {cartItem.quantity}</span>
-                    <strong>${(cartItem.item.price * cartItem.quantity).toFixed(2)}</strong>
-                  </div>
-                ))}
+                {cart.map((cartItem) => {
+                  const addonTotal = cartItem.addons.reduce(
+                    (sum, addon) => sum + addon.price,
+                    0
+                  );
+
+                  return (
+                    <div className="summary-item" key={cartItem.cartKey}>
+                      <span>
+                        {cartItem.item.name} × {cartItem.quantity}
+                      </span>
+                      <strong>
+                        $
+                        {(
+                          (Number(cartItem.item.price) + addonTotal) *
+                          cartItem.quantity
+                        ).toFixed(2)}
+                      </strong>
+                    </div>
+                  );
+                })}
               </div>
             )}
             <div className="summary-total">
@@ -298,7 +444,11 @@ function App() {
             </div>
             <button
               className="checkout-button"
-              onClick={() => setCartOpen(true)}
+              onClick={() => {
+                setShowPaymentMethods(false);
+                setCartOpen(true);
+              }}
+              disabled={cart.length === 0}
             >
               Proceed to Checkout
             </button>
@@ -308,7 +458,11 @@ function App() {
       </div>
 
       {toast && (
-        <div className="toast-notification" role="status" aria-live="polite">
+        <div
+          className="toast-notification"
+          role="status"
+          aria-live="polite"
+        >
           <span className="toast-icon">✓</span>
           <div className="toast-content">
             <strong>Added to cart!</strong>
@@ -317,19 +471,122 @@ function App() {
         </div>
       )}
 
+      {selectedItem && (
+        <div
+          className="cart-overlay"
+          onClick={() => {
+            setSelectedItem(null);
+            setSelectedAddons([]);
+          }}
+        >
+          <section
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="cart-header">
+              <div>
+                <h2>Customize your item</h2>
+                <p>{selectedItem.name}</p>
+              </div>
+              <button
+                className="close-cart"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+                aria-label="Close customization"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="cart-items">
+              <h3>Choose your add-ons</h3>
+              {ADDON_OPTIONS.map((addon) => {
+                const checked = selectedAddons.some(
+                  (selected) => selected.name === addon.name
+                );
+
+                return (
+                  <div className="addon-option" key={addon.name}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedAddons((previous) =>
+                            checked
+                              ? previous.filter(
+                                  (selected) => selected.name !== addon.name
+                                )
+                              : [...previous, addon]
+                          );
+                        }}
+                      />
+                      {addon.name}
+                    </label>
+                    <span className="addon-price">
+                      +${addon.price.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+
+              <div className="addon-total">
+                <span>Item price:</span>
+                <strong>${Number(selectedItem.price).toFixed(2)}</strong>
+              </div>
+              <div className="addon-total">
+                <span>Extra charges:</span>
+                <strong>
+                  $
+                  {selectedAddons
+                    .reduce((sum, addon) => sum + addon.price, 0)
+                    .toFixed(2)}
+                </strong>
+              </div>
+            </div>
+
+            <div className="cart-footer">
+              <button
+                className="checkout-button"
+                onClick={confirmCustomization}
+              >
+                Add to Cart
+              </button>
+              <button
+                className="remove-item"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {cartOpen && (
         <div className="cart-overlay" onClick={() => setCartOpen(false)}>
-          <aside className="cart-panel" onClick={(event) => event.stopPropagation()}>
+          <aside
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
             {showPaymentMethods ? (
               <PaymentMethods
                 total={cartTotal}
                 onBack={() => setShowPaymentMethods(false)}
-                onConfirm={(method: PaymentMethod, address: DeliveryAddress) => {
+                onConfirm={(
+                  method: PaymentMethod,
+                  address: DeliveryAddress
+                ) => {
                   alert(
                     `Payment Method: ${method}\n` +
-                    `Customer: ${address.customerName}\n` +
-                    `Delivery Address: ${address.streetAddress}, ${address.city}, ${address.province}, ${address.countryRegion}\n` +
-                    `Postal Code: ${address.postalCode}`
+                      `Customer: ${address.customerName}\n` +
+                      `Delivery Address: ${address.streetAddress}, ${address.city}, ${address.province}, ${address.countryRegion}\n` +
+                      `Postal Code: ${address.postalCode}`
                   );
                 }}
               />
@@ -340,7 +597,13 @@ function App() {
                     <h2>Shopping Cart</h2>
                     <p>{cartCount} items added</p>
                   </div>
-                  <button className="close-cart" onClick={() => setCartOpen(false)}>×</button>
+                  <button
+                    className="close-cart"
+                    onClick={() => setCartOpen(false)}
+                    aria-label="Close cart"
+                  >
+                    ×
+                  </button>
                 </div>
 
                 <div className="cart-items">
@@ -351,23 +614,66 @@ function App() {
                       <p>Add food items from the menu.</p>
                     </div>
                   ) : (
-                    cart.map((cartItem) => (
-                      <div className="cart-item" key={cartItem.item.id}>
-                        <div className="cart-item-info">
-                          <h4>{cartItem.item.name}</h4>
-                          <p>{cartItem.shopName}</p>
-                          <strong>${(cartItem.item.price * cartItem.quantity).toFixed(2)}</strong>
-                        </div>
-                        <div className="cart-item-actions">
-                          <div className="quantity-control">
-                            <button onClick={() => updateQuantity(cartItem.item.id, -1)}>−</button>
-                            <span>{cartItem.quantity}</span>
-                            <button onClick={() => updateQuantity(cartItem.item.id, 1)}>+</button>
+                    cart.map((cartItem) => {
+                      const addonTotal = cartItem.addons.reduce(
+                        (sum, addon) => sum + addon.price,
+                        0
+                      );
+
+                      return (
+                        <div className="cart-item" key={cartItem.cartKey}>
+                          <div className="cart-item-info">
+                            <h4>{cartItem.item.name}</h4>
+                            <p>{cartItem.shopName}</p>
+                            {cartItem.addons.length > 0 && (
+                              <p>
+                                Extras:{" "}
+                                {cartItem.addons
+                                  .map((addon) => addon.name)
+                                  .join(", ")}
+                              </p>
+                            )}
+                            <strong>
+                              $
+                              {(
+                                (Number(cartItem.item.price) + addonTotal) *
+                                cartItem.quantity
+                              ).toFixed(2)}
+                            </strong>
                           </div>
-                          <button className="remove-item" onClick={() => removeFromCart(cartItem.item.id)}>Remove</button>
+
+                          <div className="cart-item-actions">
+                            <div className="quantity-control">
+                              <button
+                                onClick={() =>
+                                  updateQuantity(cartItem.cartKey, -1)
+                                }
+                                aria-label="Decrease quantity"
+                              >
+                                −
+                              </button>
+                              <span>{cartItem.quantity}</span>
+                              <button
+                                onClick={() =>
+                                  updateQuantity(cartItem.cartKey, 1)
+                                }
+                                aria-label="Increase quantity"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <button
+                              className="remove-item"
+                              onClick={() =>
+                                removeFromCart(cartItem.cartKey)
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
 
@@ -377,7 +683,10 @@ function App() {
                       <span>Total</span>
                       <strong>${cartTotal.toFixed(2)}</strong>
                     </div>
-                    <button className="checkout-button" onClick={() => setShowPaymentMethods(true)}>
+                    <button
+                      className="checkout-button"
+                      onClick={() => setShowPaymentMethods(true)}
+                    >
                       Proceed to Checkout
                     </button>
                   </div>
