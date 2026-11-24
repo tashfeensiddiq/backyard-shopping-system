@@ -88,6 +88,8 @@ function App() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
+  const [favoriteShopIds, setFavoriteShopIds] = useState<number[]>([]);
+
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const restaurants = shops.filter(
@@ -250,7 +252,10 @@ function App() {
           <h1>
             🛍 Backyard <span>Shopping</span>
           </h1>
-          <p>Your neighbourhood, your marketplace</p>
+          <p>
+  Your neighbourhood, your marketplace |
+  ♡ Favourites: {favoriteShopIds.length}
+</p>
         </div>
 
         <button
