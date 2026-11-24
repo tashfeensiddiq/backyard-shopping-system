@@ -2003,3 +2003,72 @@ body,
     font-size: 20px;
   }
 }
+
+/* ORDERS HEADER BUTTON */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.top-orders-button {
+  padding: 12px 18px;
+  border: 1px solid #f5f5f5;
+  border-radius: 10px;
+  background: #5fb3b1;
+  color: #f0f2f4;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.top-orders-button:hover {
+  background: #dadde1;
+  border-color: #1b0678;
+}
+
+/* ORDERS PANEL */
+.orders-panel {
+  max-width: 550px;
+  overflow-y: auto;
+}
+
+/* INDIVIDUAL ORDER CARD */
+.order-history-card {
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid #e1e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.order-history-card h4 {
+  margin: 0 0 10px;
+  color: #26364a;
+  font-size: 16px;
+}
+
+.order-history-card p {
+  margin: 7px 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.orders-panel .cart-items h3 {
+  margin: 20px 0 12px;
+  color: #26364a;
+}
+
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 600px) {
+  .header-actions {
+    gap: 6px;
+  }
+
+  .top-orders-button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
