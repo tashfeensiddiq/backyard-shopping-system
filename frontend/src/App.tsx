@@ -88,6 +88,8 @@ function App() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
   const [favoriteShopIds, setFavoriteShopIds] = useState<number[]>([]);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -95,7 +97,11 @@ function App() {
   const restaurants = shops.filter(
     (shop) => shop.category === "Restaurant" && shop.is_active
   );
-
+const displayedRestaurants = restaurants.filter((shop) =>
+  showFavoritesOnly
+    ? favoriteShopIds.includes(shop.id)
+    : true
+);
   const restaurant =
     restaurants.find((shop) => shop.id === selectedShopId) ??
     restaurants[0] ??
@@ -190,14 +196,12 @@ function App() {
       previousCart.filter((cartItem) => cartItem.cartKey !== cartKey)
     );
   };
-  const toggleFavorite = (shopId: number) => {
-  if (favoriteShopIds.includes(shopId)) {
-    setFavoriteShopIds(
-      favoriteShopIds.filter((id) => id !== shopId)
-    );
-  } else {
-    setFavoriteShopIds([...favoriteShopIds, shopId]);
-  }
+const toggleFavorite = (shopId: number) => {
+  setFavoriteShopIds((previousIds) =>
+    previousIds.includes(shopId)
+      ? previousIds.filter((id) => id !== shopId)
+      : [...previousIds, shopId]
+  );
 };
 
   const cartCount = cart.reduce(
@@ -340,26 +344,34 @@ function App() {
                 </p>
               ) : (
                 <>
-                  <div className="restaurant-selector">
-                    <label htmlFor="restaurant-select">
-                      Showing menu from
-                    </label>
-                    <select
-                      id="restaurant-select"
-                      value={restaurant.id}
-                      onChange={(event) => {
-                        setSelectedShopId(Number(event.target.value));
-                        setSelectedItem(null);
-                        setSelectedAddons([]);
-                      }}
-                    >
-                      {restaurants.map((shop) => (
-                        <option key={shop.id} value={shop.id}>
-                          {shop.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+        <div className="restaurant-selector">
+  <label htmlFor="restaurant-select">
+    Showing menu from
+  </label>
+
+  <select
+    id="restaurant-select"
+    value={restaurant.id}
+    onChange={(event) => {
+      setSelectedShopId(Number(event.target.value));
+      setSelectedItem(null);
+      setSelectedAddons([]);
+    }}
+  >
+    {displayedRestaurants.map((shop) => (
+      <option key={shop.id} value={shop.id}>
+        {shop.name}
+      </option>
+    ))}
+  </select>
+
+  <button
+    type="button"
+    onClick={() => setShowFavoritesOnly((previous) => !previous)}
+  >
+    {showFavoritesOnly ? "❤️ Show All Shops" : "♡ Show Favorites"}
+  </button>
+</div>
 
                   <div className="food-grid">
                     {availableItems.map((item, index) => (
