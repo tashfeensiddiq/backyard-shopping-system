@@ -190,6 +190,15 @@ function App() {
       previousCart.filter((cartItem) => cartItem.cartKey !== cartKey)
     );
   };
+  const toggleFavorite = (shopId: number) => {
+  if (favoriteShopIds.includes(shopId)) {
+    setFavoriteShopIds(
+      favoriteShopIds.filter((id) => id !== shopId)
+    );
+  } else {
+    setFavoriteShopIds([...favoriteShopIds, shopId]);
+  }
+};
 
   const cartCount = cart.reduce(
     (total, cartItem) => total + cartItem.quantity,
