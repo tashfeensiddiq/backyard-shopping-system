@@ -107,12 +107,33 @@ const [ordersError, setOrdersError] = useState("");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+const [favoriteShopIds, setFavoriteShopIds] = useState<number[]>(() => {
+  try {
+    const savedFavorites = localStorage.getItem("favoriteShopIds");
+    return savedFavorites ? JSON.parse(savedFavorites) : [];
+  } catch {
+    return [];
+  }
+});
+useEffect(() => {
+  localStorage.setItem(
+    "favoriteShopIds",
+    JSON.stringify(favoriteShopIds)
+  );
+}, [favoriteShopIds]);
+
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const restaurants = shops.filter(
     (shop) => shop.category === "Restaurant" && shop.is_active
   );
-
+const displayedRestaurants = restaurants.filter((shop) =>
+  showFavoritesOnly
+    ? favoriteShopIds.includes(shop.id)
+    : true
+);
   const restaurant =
     restaurants.find((shop) => shop.id === selectedShopId) ??
     restaurants[0] ??
@@ -207,6 +228,13 @@ const [ordersError, setOrdersError] = useState("");
       previousCart.filter((cartItem) => cartItem.cartKey !== cartKey)
     );
   };
+const toggleFavorite = (shopId: number) => {
+  setFavoriteShopIds((previousIds) =>
+    previousIds.includes(shopId)
+      ? previousIds.filter((id) => id !== shopId)
+      : [...previousIds, shopId]
+  );
+};
 
   const cartCount = cart.reduce(
     (total, cartItem) => total + cartItem.quantity,
@@ -269,7 +297,10 @@ const [ordersError, setOrdersError] = useState("");
           <h1>
             🛍 Backyard <span>Shopping</span>
           </h1>
-          <p>Your neighbourhood, your marketplace</p>
+          <p>
+  Your neighbourhood, your marketplace |
+  ♡ Favourites: {favoriteShopIds.length}
+</p>
         </div>
 {/* jkr */}
         <div className="header-actions">
@@ -372,27 +403,46 @@ const [ordersError, setOrdersError] = useState("");
                 </p>
               ) : (
                 <>
-                  <div className="restaurant-selector">
-                    <label htmlFor="restaurant-select">
-                      Showing menu from
-                    </label>
-                    <select
-                      id="restaurant-select"
-                      value={restaurant.id}
-                      onChange={(event) => {
-                        setSelectedShopId(Number(event.target.value));
-                        setSelectedItem(null);
-                        setSelectedAddons([]);
-                      }}
-                    >
-                      {restaurants.map((shop) => (
-                        <option key={shop.id} value={shop.id}>
-                          {shop.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+        <div className="restaurant-selector">
+  <label htmlFor="restaurant-select">
+    Showing menu from
+  </label>
 
+  <select
+    id="restaurant-select"
+    value={restaurant.id}
+    onChange={(event) => {
+      setSelectedShopId(Number(event.target.value));
+      setSelectedItem(null);
+      setSelectedAddons([]);
+    }}
+  >
+    {displayedRestaurants.map((shop) => (
+      <option key={shop.id} value={shop.id}>
+        {shop.name}
+      </option>
+    ))}
+  </select>
+
+  <button
+    type="button"
+    onClick={() => setShowFavoritesOnly((previous) => !previous)}
+  >
+   git add frontend/src/App.tsx
+  </button>
+</div>
+
+<div className="favorite-shops">
+  {restaurants.map((shop) => (
+    <button
+      key={shop.id}
+      type="button"
+      onClick={() => toggleFavorite(shop.id)}
+    >
+      {favoriteShopIds.includes(shop.id) ? "❤️" : "♡"} {shop.name}
+    </button>
+  ))}
+</div>
                   <div className="food-grid">
                     {availableItems.map((item, index) => (
                       <article
