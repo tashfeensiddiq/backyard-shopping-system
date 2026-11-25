@@ -1,3 +1,4 @@
+
 from app.database import SessionLocal
 from app.models.shop import Shop
 from app.models.food_item import FoodItem
@@ -5,72 +6,98 @@ from app.models.food_item import FoodItem
 db = SessionLocal()
 
 try:
-    existing_shops = db.query(Shop).count()
+    # Demo restaurants and their menus
+    demo_restaurants = [
+        {
+            "name": "Italian Corner",
+            "description": "Enjoy delicious Italian food and fresh pasta.",
+            "category": "Restaurant",
+            "address": "Central, St. John's, NL, Canada",
+            "latitude": 47.5660,
+            "longitude": -52.7100,
+            "items": [
+                ("Creamy Alfredo Pasta", "Pasta with creamy sauce", 15.99),
+                ("Margherita Pizza", "Classic cheese pizza", 14.99),
+                ("Garlic Bread", "Toasted garlic bread", 5.99),
+                ("Lasagna", "Traditional baked lasagna", 16.99),
+            ],
+        },
+        {
+            "name": "Spice Garden",
+            "description": "A demo restaurant serving flavorful meals.",
+            "category": "Restaurant",
+            "address": "West End, St. John's, NL, Canada",
+            "latitude": 47.5590,
+            "longitude": -52.7250,
+            "items": [
+                ("Chicken Biryani", "Spiced rice with chicken", 14.99),
+                ("Butter Chicken", "Chicken in creamy tomato sauce", 16.99),
+                ("Vegetable Curry", "Mixed vegetable curry", 12.99),
+                ("Garlic Naan", "Freshly baked naan bread", 3.99),
+            ],
+        },
+        {
+            "name": "Pizza Planet",
+            "description": "A demo pizza restaurant with tasty favorites.",
+            "category": "Restaurant",
+            "address": "East End, St. John's, NL, Canada",
+            "latitude": 47.5730,
+            "longitude": -52.7000,
+            "items": [
+                ("Pepperoni Pizza", "Pizza topped with pepperoni", 15.99),
+                ("BBQ Chicken Pizza", "Chicken with BBQ sauce", 17.99),
+                ("Cheese Pizza", "Classic cheese pizza", 12.99),
+                ("French Fries", "Crispy golden fries", 5.99),
+            ],
+        },
+    ]
 
-    if existing_shops == 0:
-        boutique = Shop(
-            name="Demo Boutique Downtown",
-            description="Sample fashion boutique.",
-            category="Fashion",
-            address="Downtown, St. John's, NL, Canada",
-            latitude=47.5615,
-            longitude=-52.7126,
-            is_active=True
-        )
+    added_count = 0
 
-        general_shop = Shop(
-            name="Demo Shop West",
-            description="Sample local shop.",
-            category="General",
-            address="West End, St. John's, NL, Canada",
-            latitude=47.5588,
-            longitude=-52.7350,
-            is_active=True
-        )
+    for data in demo_restaurants:
+        # Check whether this restaurant already exists
+        existing = db.query(Shop).filter(
+            Shop.name == data["name"]
+        ).first()
 
+        if existing:
+            print(f"{data['name']} already exists. Skipping.")
+            continue
+
+        # Create restaurant
         restaurant = Shop(
-            name="Harbour Bites Restaurant",
-            description="A demo restaurant serving popular meals.",
-            category="Restaurant",
-            address="East End, St. John's, NL, Canada",
-            latitude=47.5740,
-            longitude=-52.6900,
-            is_active=True
+            name=data["name"],
+            description=data["description"],
+            category=data["category"],
+            address=data["address"],
+            latitude=data["latitude"],
+            longitude=data["longitude"],
+            is_active=True,
         )
 
-        db.add_all([boutique, general_shop, restaurant])
+        db.add(restaurant)
         db.flush()
 
-        food_items = [
-            FoodItem(shop_id=restaurant.id, name="Classic Beef Burger",
-                     description="Beef burger", price=12.99),
-            FoodItem(shop_id=restaurant.id, name="Chicken Burger",
-                     description="Chicken burger", price=11.99),
-            FoodItem(shop_id=restaurant.id, name="Margherita Pizza",
-                     description="Classic cheese pizza", price=14.99),
-            FoodItem(shop_id=restaurant.id, name="Chicken Pizza",
-                     description="Chicken pizza", price=16.99),
-            FoodItem(shop_id=restaurant.id, name="Fish and Chips",
-                     description="Fish with fries", price=15.99),
-            FoodItem(shop_id=restaurant.id, name="Poutine",
-                     description="Fries with cheese curds and gravy",
-                     price=9.99),
-            FoodItem(shop_id=restaurant.id, name="French Fries",
-                     description="Crispy fries", price=5.99),
-            FoodItem(shop_id=restaurant.id, name="Soft Drinks",
-                     description="Assorted soft drinks", price=2.99),
-        ]
+        # Create its food menu
+        for name, description, price in data["items"]:
+            food = FoodItem(
+                shop_id=restaurant.id,
+                name=name,
+                description=description,
+                price=price,
+            )
+            db.add(food)
 
-        db.add_all(food_items)
-        db.commit()
+        added_count += 1
+        print(f"Added {data['name']} with its menu.")
 
-        print("Demo shops and food items inserted successfully!")
+    db.commit()
 
-    else:
-        print("Shop records already exist. No data inserted.")
+    print(f"Finished! Added {added_count} new demo restaurants.")
 
-except Exception:
+except Exception as error:
     db.rollback()
+    print("Error inserting demo restaurants:", error)
     raise
 
 finally:

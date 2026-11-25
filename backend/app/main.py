@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.shops import router as shops_router
+from app.api.orders import router as orders_router
 from app.api.auth import router as auth_router
 
 # Import model so SQLAlchemy registers the User table
@@ -31,6 +32,7 @@ app.add_middleware(
 
 # Register existing routes
 app.include_router(shops_router)
+app.include_router(orders_router)
 
 # Register authentication routes
 app.include_router(auth_router)

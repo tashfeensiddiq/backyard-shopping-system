@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
-
 import PaymentMethods, {
   type PaymentMethod,
+  type DeliveryAddress,
 } from "./components/PaymentMethods";
-
 import { fetchShops } from "./services/shopService";
+import {
+  createOrder,
+  fetchOrders,
+  getCustomerKey,
+  type OrderResponse,
+} from "./services/orderService";
+
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
 
@@ -22,118 +28,62 @@ interface CartItem {
   cartKey: string;
 }
 
+const categories = ["All", "Burgers", "Pizza", "Sides", "Drinks", "Healthy"];
+
 const ADDON_OPTIONS: Addon[] = [
   { name: "Extra Sauce", price: 0.5 },
   { name: "Mayonnaise", price: 0.5 },
   { name: "Black Pepper", price: 0.25 },
   { name: "Sriracha Sauce", price: 0.75 },
-  { name: "Extra Cheese", price: 1.0 },
+  { name: "Extra Cheese", price: 1 },
 ];
 
-const categoryIcons: Record<string, string> = {
-  restaurant: "🍔",
-  grocery: "🛒",
-  fashion: "👕",
-  clothing: "👕",
-  electronics: "💻",
-  pharmacy: "💊",
-  bakery: "🥐",
-  general: "🏪",
-};
+function getFoodEmoji(name: string) {
+  const value = name.toLowerCase();
 
-function getCategoryIcon(category: string) {
-  return categoryIcons[category.toLowerCase()] || "🏪";
+  if (value.includes("burger")) return "🍔";
+  if (value.includes("pizza")) return "🍕";
+  if (value.includes("fries") || value.includes("potato")) return "🍟";
+  if (
+    value.includes("drink") ||
+    value.includes("soda") ||
+    value.includes("juice")
+  ) {
+    return "🥤";
+  }
+  if (value.includes("salad") || value.includes("healthy")) return "🥗";
+  if (value.includes("popcorn")) return "🍿";
+
+  return "🍽️";
 }
 
-// Product images
-function getProductImage(item: FoodItem, category: string): string {
-  const text = `${item.name} ${item.description ?? ""}`.toLowerCase();
+function getFoodCategory(name: string) {
+  const value = name.toLowerCase();
 
+  if (value.includes("burger")) return "Burgers";
+  if (value.includes("pizza")) return "Pizza";
   if (
-    /shirt|jean|hoodie|jacket|dress|shoe|cap|wallet|glove|scarf|fashion|clothing/.test(
-      text
-    )
+    value.includes("fries") ||
+    value.includes("potato") ||
+    value.includes("popcorn")
   ) {
-    return "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=480&q=80";
+    return "Sides";
   }
-
   if (
-    /milk|egg|bread|banana|apple|potato|rice|chicken|juice|chip|butter|oil|soap|toilet|vegetable|fruit|grocery/.test(
-      text
-    )
+    value.includes("drink") ||
+    value.includes("soda") ||
+    value.includes("juice")
   ) {
-    return "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=480&q=80";
+    return "Drinks";
   }
+  if (value.includes("salad") || value.includes("healthy")) return "Healthy";
 
-  if (
-    /burger|wing|poutine|fries|pizza|salad|wrap|brownie|shake|drink|food|restaurant/.test(
-      text
-    )
-  ) {
-    return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=480&q=80";
-  }
-
-  const normalized = category.toLowerCase();
-
-  if (/fashion|clothing/.test(normalized)) {
-    return "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=480&q=80";
-  }
-
-  if (/grocery|general/.test(normalized)) {
-    return "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=480&q=80";
-  }
-
-  if (/restaurant/.test(normalized)) {
-    return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=480&q=80";
-  }
-
-  return "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=480&q=80";
-}
-
-// Product category detection
-function getProductGroup(
-  item: FoodItem,
-  shopCategory: string
-): string {
-  const text = `${item.name} ${item.description ?? ""}`.toLowerCase();
-
-  if (
-    /shirt|jean|hoodie|jacket|dress|shoe|cap|wallet|glove|scarf|fashion|clothing/.test(
-      text
-    )
-  ) {
-    return "Fashion";
-  }
-
-  if (
-    /milk|egg|bread|banana|apple|potato|rice|chicken|juice|chip|butter|oil|soap|toilet|vegetable|fruit|grocery/.test(
-      text
-    )
-  ) {
-    return "Grocery";
-  }
-
-  if (
-    /burger|wing|poutine|fries|pizza|salad|wrap|brownie|shake|drink|food|restaurant/.test(
-      text
-    )
-  ) {
-    return "Food";
-  }
-
-  const category = shopCategory.toLowerCase();
-
-  if (/fashion|clothing/.test(category)) return "Fashion";
-  if (/grocery|general/.test(category)) return "Grocery";
-  if (/restaurant/.test(category)) return "Food";
-
-  return "Other";
+  return "All";
 }
 
 function App() {
   const [shops, setShops] = useState<Shop[]>([]);
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
-
+  const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -143,50 +93,82 @@ function App() {
 
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
-
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
-  // Product search and filter states
-  const [productSearch, setProductSearch] = useState("");
-  const [productFilter, setProductFilter] = useState("All");
-  const [productQuantities, setProductQuantities] = useState<Record<number, number>>({});
+const [orders, setOrders] = useState<OrderResponse[]>([]);
+const [ordersOpen, setOrdersOpen] = useState(false);
+const [ordersLoading, setOrdersLoading] = useState(false);
+const [ordersError, setOrdersError] = useState("");
+
+  const [orderConfirmation, setOrderConfirmation] = useState<{
+  method: PaymentMethod;
+  address: DeliveryAddress;
+  total: number;
+} | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+const [favoriteShopIds, setFavoriteShopIds] = useState<number[]>(() => {
+  try {
+    const savedFavorites = localStorage.getItem("favoriteShopIds");
+    return savedFavorites ? JSON.parse(savedFavorites) : [];
+  } catch {
+    return [];
+  }
+});
+useEffect(() => {
+  localStorage.setItem(
+    "favoriteShopIds",
+    JSON.stringify(favoriteShopIds)
+  );
+}, [favoriteShopIds]);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const categories = [
-    "All",
-    ...Array.from(
-      new Set(
-        shops
-          .filter((shop) => shop.is_active)
-          .map((shop) => shop.category)
-      )
-    ),
-  ];
+  const restaurants = shops.filter(
+    (shop) => shop.category === "Restaurant" && shop.is_active
+  );
+const displayedRestaurants = restaurants.filter((shop) =>
+  showFavoritesOnly
+    ? favoriteShopIds.includes(shop.id)
+    : true
+);
+  const restaurant =
+    restaurants.find((shop) => shop.id === selectedShopId) ??
+    restaurants[0] ??
+    null;
 
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const availableItems = useMemo(() => {
+    if (!restaurant) return [];
 
-  const filteredShops =
-    selectedCategory === "All"
-      ? shops.filter((shop) => shop.is_active)
-      : shops.filter(
-          (shop) =>
-            shop.is_active &&
-            shop.category === selectedCategory
-        );
+    return restaurant.items.filter((item) => {
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesCategory =
+        activeCategory === "All" ||
+        getFoodCategory(item.name) === activeCategory;
 
-  const isRestaurant =
-    selectedShop?.category?.toLowerCase() === "restaurant";
+      return item.is_available && matchesSearch && matchesCategory;
+    });
+  }, [restaurant, search, activeCategory]);
 
-  // Add item to cart
   const addToCart = (
     item: FoodItem,
     shopName: string,
-    addons: Addon[] = [],
-    quantity: number = 1
+    addons: Addon[] = []
   ) => {
+    if (cart.length > 0 && cart[0].shopName !== shopName) {
+      alert(
+        `Your cart already contains items from ${cart[0].shopName}. Please complete or clear that order before choosing another restaurant.`
+      );
+      return;
+    }
+
     const cartKey = JSON.stringify([
-      shopName,
       item.id,
       addons.map((addon) => addon.name).sort(),
     ]);
@@ -199,10 +181,7 @@ function App() {
       if (existingItem) {
         return previousCart.map((cartItem) =>
           cartItem.cartKey === cartKey
-            ? {
-                ...cartItem,
-                quantity: cartItem.quantity + quantity,
-              }
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       }
@@ -211,7 +190,7 @@ function App() {
         ...previousCart,
         {
           item,
-          quantity,
+          quantity: 1,
           shopName,
           addons: [...addons],
           cartKey,
@@ -220,11 +199,8 @@ function App() {
     });
 
     const extraNames = addons.map((addon) => addon.name).join(", ");
-
     setToast(
-      `${item.name} added to cart${
-        extraNames ? ` with ${extraNames}` : ""
-      }`
+      `${item.name} added to cart${extraNames ? ` with ${extraNames}` : ""}`
     );
 
     if (toastTimer.current) {
@@ -237,38 +213,36 @@ function App() {
     }, 2500);
   };
 
-  // Update cart quantity
   const updateQuantity = (cartKey: string, change: number) => {
     setCart((previousCart) =>
       previousCart
         .map((cartItem) =>
           cartItem.cartKey === cartKey
-            ? {
-                ...cartItem,
-                quantity: cartItem.quantity + change,
-              }
+            ? { ...cartItem, quantity: cartItem.quantity + change }
             : cartItem
         )
         .filter((cartItem) => cartItem.quantity > 0)
     );
   };
 
-  // Remove item from cart
   const removeFromCart = (cartKey: string) => {
     setCart((previousCart) =>
-      previousCart.filter(
-        (cartItem) => cartItem.cartKey !== cartKey
-      )
+      previousCart.filter((cartItem) => cartItem.cartKey !== cartKey)
     );
   };
+const toggleFavorite = (shopId: number) => {
+  setFavoriteShopIds((previousIds) =>
+    previousIds.includes(shopId)
+      ? previousIds.filter((id) => id !== shopId)
+      : [...previousIds, shopId]
+  );
+};
 
-  // Cart quantity
   const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
+    (total, cartItem) => total + cartItem.quantity,
     0
   );
 
-  // Cart total
   const cartTotal = cart.reduce((total, cartItem) => {
     const addonTotal = cartItem.addons.reduce(
       (sum, addon) => sum + addon.price,
@@ -277,29 +251,20 @@ function App() {
 
     return (
       total +
-      (Number(cartItem.item.price) + addonTotal) *
-        cartItem.quantity
+      (Number(cartItem.item.price) + addonTotal) * cartItem.quantity
     );
   }, 0);
 
-  // Load shops from API
   useEffect(() => {
     const loadShops = async () => {
       try {
         setLoading(true);
         setError("");
-
         const data = await fetchShops();
-
-        console.log("Shops received from API:", data);
-
         setShops(data);
       } catch (err) {
         console.error("Shop loading error:", err);
-
-        setError(
-          "Unable to load shops. Please check the backend connection."
-        );
+        setError("Unable to load shops. Please check the backend connection.");
       } finally {
         setLoading(false);
       }
@@ -308,516 +273,586 @@ function App() {
     loadShops();
   }, []);
 
-  // Clear toast timer on unmount
   useEffect(() => {
     return () => {
-      if (toastTimer.current) {
-        clearTimeout(toastTimer.current);
-      }
+      if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
-  // Category change
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedShop(null);
+  const openCustomization = (item: FoodItem) => {
+    setSelectedItem(item);
+    setSelectedAddons([]);
+  };
+
+  const confirmCustomization = () => {
+    if (!selectedItem || !restaurant) return;
+
+    addToCart(selectedItem, restaurant.name, selectedAddons);
     setSelectedItem(null);
     setSelectedAddons([]);
-    setProductSearch("");
-    setProductFilter("All");
   };
-
-  // Select shop
-  const handleShopSelect = (shop: Shop) => {
-    setSelectedShop(shop);
-    setSelectedItem(null);
-    setSelectedAddons([]);
-    setProductSearch("");
-    setProductFilter("All");
-  };
-
-  // Update the quantity selected on a product card
-  const changeProductQuantity = (itemId: number, change: number) => {
-    setProductQuantities((previous) => ({
-      ...previous,
-      [itemId]: Math.max(1, (previous[itemId] ?? 1) + change),
-    }));
-  };
-
-  // Add product
-  const handleAddItem = (item: FoodItem) => {
-    if (!selectedShop) return;
-
-    if (selectedShop.category.toLowerCase() === "restaurant") {
-      setSelectedItem(item);
-      setSelectedAddons([]);
-      return;
-    }
-
-    addToCart(item, selectedShop.name, [], productQuantities[item.id] ?? 1);
-    setProductQuantities((previous) => ({ ...previous, [item.id]: 1 }));
-  };
-
-  // Filter products
-  const filteredProducts = selectedShop
-    ? selectedShop.items.filter((item) => {
-        const matchesSearch =
-          item.name
-            .toLowerCase()
-            .includes(productSearch.trim().toLowerCase()) ||
-          (item.description ?? "")
-            .toLowerCase()
-            .includes(productSearch.trim().toLowerCase());
-
-        const matchesCategory =
-          productFilter === "All" ||
-          getProductGroup(item, selectedShop.category) ===
-            productFilter;
-
-        return item.is_available && matchesSearch && matchesCategory;
-      })
-    : [];
 
   return (
     <main className="app-shell">
-      {/* LEFT MENU PANEL */}
-      <aside className="menu-sidebar">
-        <div className="sidebar-header">
-          <h2>Backyard Shopping</h2>
-          <p>Discover local food and shops</p>
+      <header className="top-header">
+        <div className="brand">
+          <h1>
+            🛍 Backyard <span>Shopping</span>
+          </h1>
+          <p>
+  Your neighbourhood, your marketplace |
+  ♡ Favourites: {favoriteShopIds.length}
+</p>
         </div>
+{/* jkr */}
+        <div className="header-actions">
+  <button
+    className="top-orders-button"
+    onClick={async () => {
+      setOrdersOpen(true);
+      setOrdersLoading(true);
+      setOrdersError("");
 
-        {loading && (
-          <p className="sidebar-message">Loading shops...</p>
-        )}
+      try {
+        const customerKey = getCustomerKey();
+        const customerOrders = await fetchOrders(customerKey);
+        setOrders(customerOrders);
+      } catch (error) {
+        setOrdersError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load orders."
+        );
+      } finally {
+        setOrdersLoading(false);
+      }
+    }}
+  >
+    📦 Orders
+  </button>
 
-        {error && <p className="sidebar-error">{error}</p>}
+  <button
+    className="top-cart-button"
+    onClick={() => {
+      setShowPaymentMethods(false);
+      setCartOpen(true);
+    }}
+  >
+    🛒 Cart <span>{cartCount}</span>
+  </button>
+</div>
+      </header>
 
-        {!loading && !error && (
-          <div
-            className={`sidebar-content ${
-              selectedShop ? "shopping-mode" : "browse-mode"
-            }`}
-          >
-            {selectedShop ? (
-              <>
-                {/* SELECTED SHOP HEADER */}
-                <div className="selected-shop-header">
+      <div className="dashboard-layout">
+        <section className="main-content">
+          <section className="welcome-banner">
+            <div className="welcome-copy">
+              <span>LOCAL FAVORITES · FRESH PICKS</span>
+              <h2>
+                Good food, closer
+                <br />
+                to home. 💙
+              </h2>
+              <p>Discover local shops and delicious favourites.</p>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("food-menu")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                Explore menu →
+              </button>
+            </div>
+            <div className="welcome-illustration">🥗</div>
+          </section>
+
+          {loading && (
+            <p className="status-message">Loading local favourites...</p>
+          )}
+          {error && <p className="status-error">{error}</p>}
+
+          {!loading && !error && (
+            <>
+              <input
+                className="food-search"
+                type="search"
+                placeholder="⌕  Search burgers, pizza, drinks..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+
+              <div className="category-filters">
+                {categories.map((category) => (
                   <button
-                    className="back-to-shops"
-                    onClick={() => {
-                      setSelectedShop(null);
-                      setSelectedItem(null);
-                      setSelectedAddons([]);
-                      setProductSearch("");
-                      setProductFilter("All");
-                    }}
+                    key={category}
+                    className={activeCategory === category ? "active" : ""}
+                    onClick={() => setActiveCategory(category)}
                   >
-                    ← All shops
+                    {category}
                   </button>
+                ))}
+              </div>
 
-                  <div className="selected-shop-title-row">
-                    <span className="selected-shop-icon">
-                      {getCategoryIcon(selectedShop.category)}
-                    </span>
+              <div className="menu-heading" id="food-menu">
+                <h3>Popular near you</h3>
+                <span>{availableItems.length} items</span>
+              </div>
 
-                    <div className="selected-shop-title">
-                      <span className="selected-shop-category">
-                        {selectedShop.category}
-                      </span>
-                      <h2>{selectedShop.name}</h2>
-                    </div>
-                  </div>
+              {!restaurant ? (
+                <p className="status-message">
+                  No restaurants are currently available.
+                </p>
+              ) : (
+                <>
+        <div className="restaurant-selector">
+  <label htmlFor="restaurant-select">
+    Showing menu from
+  </label>
 
-                  <p className="selected-shop-description">
-                    {selectedShop.description}
-                  </p>
+  <select
+    id="restaurant-select"
+    value={restaurant.id}
+    onChange={(event) => {
+      setSelectedShopId(Number(event.target.value));
+      setSelectedItem(null);
+      setSelectedAddons([]);
+    }}
+  >
+    {displayedRestaurants.map((shop) => (
+      <option key={shop.id} value={shop.id}>
+        {shop.name}
+      </option>
+    ))}
+  </select>
 
-                  <small className="selected-shop-address">
-                    {selectedShop.address}
-                  </small>
-                </div>
+  <button
+    type="button"
+    onClick={() => setShowFavoritesOnly((previous) => !previous)}
+  >
+   git add frontend/src/App.tsx
+  </button>
+</div>
 
-                {/* PRODUCTS HEADER */}
-                <div className="products-heading">
-                  <div>
-                    <h3>{isRestaurant ? "Menu" : "Products"}</h3>
-                    <span>
-                      {selectedShop.items.filter(
-                        (item) => item.is_available
-                      ).length}{" "}
-                      items available
-                    </span>
-                  </div>
-                </div>
-
-                {/* SEARCH AND FILTER */}
-                <div className="product-tools">
-                  <div className="product-search-wrap">
-                    <span className="product-search-icon">⌕</span>
-
-                    <input
-                      className="product-search"
-                      value={productSearch}
-                      onChange={(event) =>
-                        setProductSearch(event.target.value)
-                      }
-                      placeholder="Search products..."
-                    />
-
-                    {productSearch && (
-                      <button
-                        className="clear-product-search"
-                        onClick={() => setProductSearch("")}
-                        aria-label="Clear search"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-
-                  {/* CATEGORY FILTER */}
-                  <div className="product-filter-pills">
-                    {["All", "Food", "Grocery", "Fashion", "Other"].map(
-                      (filter) => (
-                        <button
-                          key={filter}
-                          className={`product-filter-pill ${
-                            productFilter === filter ? "active" : ""
-                          }`}
-                          onClick={() => setProductFilter(filter)}
-                        >
-                          {filter}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* PRODUCT LIST */}
-                <div className="food-list">
-                  {filteredProducts.map((item) => (
-                    <div className="food-card product-card" key={item.id}>
-                      {/* PRODUCT IMAGE */}
-                      <div className="product-image-wrap">
-                        <img
-                          className="product-image"
-                          src={getProductImage(
-                            item,
-                            selectedShop.category
-                          )}
-                          alt={item.name}
-                          loading="lazy"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-
-                        <span className="product-category-icon">
-                          {getCategoryIcon(selectedShop.category)}
-                        </span>
-                      </div>
-
-                      <div className="food-card-content">
-                        <div>
-                          <h4>{item.name}</h4>
-                          <p>{item.description}</p>
-                        </div>
-
-                        <div className="product-quantity-control">
-                          <button
-                            type="button"
-                            onClick={() => changeProductQuantity(item.id, -1)}
-                            aria-label={`Decrease ${item.name} quantity`}
-                          >−</button>
-                          <span>{productQuantities[item.id] ?? 1}</span>
-                          <button
-                            type="button"
-                            onClick={() => changeProductQuantity(item.id, 1)}
-                            aria-label={`Increase ${item.name} quantity`}
-                          >+</button>
-                        </div>
-
-                        <div className="food-card-bottom">
-                          <strong>
-                            ${Number(item.price).toFixed(2)}
-                          </strong>
-
-                          <button
-                            className="addon-confirm-button"
-                            onClick={() => handleAddItem(item)}
-                          >
-                            {isRestaurant ? "Customize" : "Add to Cart"}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* RESTAURANT ADD-ONS */}
-                      {selectedItem?.id === item.id &&
-                        isRestaurant && (
-                          <div className="addons-section">
-                            <h4>Choose Your Add-ons</h4>
-
-                            {ADDON_OPTIONS.map((addon) => (
-                              <div
-                                className="addon-option"
-                                key={addon.name}
-                              >
-                                <label>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedAddons.some(
-                                      (selected) =>
-                                        selected.name === addon.name
-                                    )}
-                                    onChange={() =>
-                                      setSelectedAddons((previous) =>
-                                        previous.some(
-                                          (selected) =>
-                                            selected.name === addon.name
-                                        )
-                                          ? previous.filter(
-                                              (selected) =>
-                                                selected.name !==
-                                                addon.name
-                                            )
-                                          : [...previous, addon]
-                                      )
-                                    }
-                                  />
-                                  {addon.name}
-                                </label>
-
-                                <span className="addon-price">
-                                  +${addon.price.toFixed(2)}
-                                </span>
-                              </div>
-                            ))}
-
-                            <div className="addon-total">
-                              <span>Extra Charges:</span>
-                              <span>
-                                $
-                                {selectedAddons
-                                  .reduce(
-                                    (sum, addon) =>
-                                      sum + addon.price,
-                                    0
-                                  )
-                                  .toFixed(2)}
-                              </span>
-                            </div>
-
-                            <button
-                              className="addon-confirm-button"
-                              onClick={() => {
-                                addToCart(
-                                  item,
-                                  selectedShop.name,
-                                  selectedAddons,
-                                  productQuantities[item.id] ?? 1
-                                );
-                                setProductQuantities((previous) => ({ ...previous, [item.id]: 1 }));
-
-                                setSelectedItem(null);
-                                setSelectedAddons([]);
-                              }}
-                            >
-                              Add to Cart
-                            </button>
-
-                            <button
-                              className="remove-item"
-                              onClick={() => {
-                                setSelectedItem(null);
-                                setSelectedAddons([]);
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        )}
-                    </div>
-                  ))}
-
-                  {/* EMPTY SEARCH RESULT */}
-                  {filteredProducts.length === 0 && (
-                    <div className="no-products">
-                      No products match your search. Try another keyword or
-                      filter.
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                {/* SHOP CATEGORIES */}
-                <div className="category-section">
-                  <h3>Shop Categories</h3>
-<div className="category-pills">
-  {categories.map((category) => (
+<div className="favorite-shops">
+  {restaurants.map((shop) => (
     <button
-      key={category}
-      className={`category-pill ${
-        selectedCategory === category ? "active" : ""
-      }`}
-      onClick={() => handleCategoryChange(category)}
+      key={shop.id}
+      type="button"
+      onClick={() => toggleFavorite(shop.id)}
     >
-      {category === "All"
-        ? "🏪 All Shops"
-        : `${getCategoryIcon(category)} ${category}`}
+      {favoriteShopIds.includes(shop.id) ? "❤️" : "♡"} {shop.name}
     </button>
   ))}
 </div>
-                </div>
-
-                {/* SHOP LIST */}
-                <div className="shop-list-section">
-                  <div className="shop-list-heading">
-                    <h3>Local Shops</h3>
-                    <span>{filteredShops.length}</span>
+                  <div className="food-grid">
+                    {availableItems.map((item, index) => (
+                      <article
+                        className={`food-card food-color-${index % 6}`}
+                        key={item.id}
+                      >
+                        <div className="food-emoji">
+                          {getFoodEmoji(item.name)}
+                        </div>
+                        <div className="food-card-content">
+                          <h4>{item.name}</h4>
+                          <p>
+                            {item.description || "Freshly prepared for you"}
+                          </p>
+                          <div className="food-card-bottom">
+                            <strong>
+                              ${Number(item.price).toFixed(2)}
+                            </strong>
+                            <button
+                              className="add-item"
+                              onClick={() => openCustomization(item)}
+                            >
+                              + Customize
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
                   </div>
 
-                  {filteredShops.length === 0 && (
-                    <p className="sidebar-message">
-                      No shops available in this category.
+                  {availableItems.length === 0 && (
+                    <p className="status-message">
+                      No items match your search. Try another category.
                     </p>
                   )}
+                </>
+              )}
+            </>
+          )}
 
-                  {filteredShops.map((shop) => (
-                    <button
-                      key={shop.id}
-                      className="shop-list-card"
-                      onClick={() => handleShopSelect(shop)}
-                    >
-                      <div className="shop-card-icon">
-                        {getCategoryIcon(shop.category)}
-                      </div>
+          <footer className="page-footer">
+            Backyard Shopping · Supporting local businesses 💙
+          </footer>
+        </section>
 
-                      <div className="shop-card-details">
-                        <strong>{shop.name}</strong>
-                        <span>{shop.category}</span>
-                        <small>{shop.address}</small>
-                      </div>
+        <aside className="right-sidebar">
+          <section className="side-card map-card">
+            <h3>📍 Explore Local Shops</h3>
+            <div className="mini-map">
+              <MapView
+                shops={restaurants}
+                selectedShopId={restaurant?.id ?? null}
+                onSelectShop={(shop) => setSelectedShopId(shop.id)}
+              />
+            </div>
+            <p>
+              {restaurant
+                ? `${restaurant.name} · ${restaurant.address}`
+                : "Explore nearby restaurants"}
+            </p>
+          </section>
 
-                      <span className="shop-card-arrow">›</span>
-                    </button>
+          <section className="side-card cart-summary">
+            <h3>🛍 Your Shopping Cart</h3>
+            {cart.length === 0 ? (
+              <p>Your cart is empty. Add something delicious!</p>
+            ) : (
+              <div className="summary-items">
+                {cart.map((cartItem) => {
+                  const addonTotal = cartItem.addons.reduce(
+                    (sum, addon) => sum + addon.price,
+                    0
+                  );
+
+                  return (
+                    <div className="summary-item" key={cartItem.cartKey}>
+                      <span>
+                        {cartItem.item.name} × {cartItem.quantity}
+                      </span>
+                      <strong>
+                        $
+                        {(
+                          (Number(cartItem.item.price) + addonTotal) *
+                          cartItem.quantity
+                        ).toFixed(2)}
+                      </strong>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="summary-total">
+              <strong>Total</strong>
+              <strong>${cartTotal.toFixed(2)}</strong>
+            </div>
+            <button
+              className="checkout-button"
+              onClick={() => {
+                setShowPaymentMethods(false);
+                setCartOpen(true);
+              }}
+              disabled={cart.length === 0}
+            >
+              Proceed to Checkout
+            </button>
+            <small>Demo checkout · No real payment</small>
+          </section>
+        </aside>
+      </div>
+
+      {toast && (
+        <div
+          className="toast-notification"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="toast-icon">✓</span>
+          <div className="toast-content">
+            <strong>Added to cart!</strong>
+            <p>{toast}</p>
+          </div>
+        </div>
+      )}
+
+      {selectedItem && (
+        <div
+          className="cart-overlay"
+          onClick={() => {
+            setSelectedItem(null);
+            setSelectedAddons([]);
+          }}
+        >
+          <section
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="cart-header">
+              <div>
+                <h2>Customize your item</h2>
+                <p>{selectedItem.name}</p>
+              </div>
+              <button
+                className="close-cart"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+                aria-label="Close customization"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="cart-items">
+              <h3>Choose your add-ons</h3>
+              {ADDON_OPTIONS.map((addon) => {
+                const checked = selectedAddons.some(
+                  (selected) => selected.name === addon.name
+                );
+
+                return (
+                  <div className="addon-option" key={addon.name}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedAddons((previous) =>
+                            checked
+                              ? previous.filter(
+                                  (selected) => selected.name !== addon.name
+                                )
+                              : [...previous, addon]
+                          );
+                        }}
+                      />
+                      {addon.name}
+                    </label>
+                    <span className="addon-price">
+                      +${addon.price.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+
+              <div className="addon-total">
+                <span>Item price:</span>
+                <strong>${Number(selectedItem.price).toFixed(2)}</strong>
+              </div>
+              <div className="addon-total">
+                <span>Extra charges:</span>
+                <strong>
+                  $
+                  {selectedAddons
+                    .reduce((sum, addon) => sum + addon.price, 0)
+                    .toFixed(2)}
+                </strong>
+              </div>
+            </div>
+
+            <div className="cart-footer">
+              <button
+                className="checkout-button"
+                onClick={confirmCustomization}
+              >
+                Add to Cart
+              </button>
+              <button
+                className="remove-item"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    
+{ordersOpen && (
+  <div
+    className="cart-overlay"
+    onClick={() => setOrdersOpen(false)}
+  >
+    <section
+      className="cart-panel orders-panel"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="cart-header">
+        <div>
+          <h2>📦 My Orders</h2>
+          <p>Your current and previous orders</p>
+        </div>
+
+        <button
+          className="close-cart"
+          onClick={() => setOrdersOpen(false)}
+          aria-label="Close orders"
+        >
+          ×
+        </button>
+      </div>
+
+      {ordersLoading ? (
+        <p className="status-message">Loading your orders...</p>
+      ) : ordersError ? (
+        <p className="status-error">{ordersError}</p>
+      ) : orders.length === 0 ? (
+        <div className="empty-cart">
+          <div>📦</div>
+          <h3>No orders yet</h3>
+          <p>Your orders will appear here after checkout.</p>
+        </div>
+      ) : (
+        <div className="cart-items">
+          <h3>Current Orders</h3>
+
+          {orders.filter((order) =>
+            ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+              .includes(order.status)
+          ).length === 0 ? (
+            <p>No current orders.</p>
+          ) : (
+            orders
+              .filter((order) =>
+                ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+                  .includes(order.status)
+              )
+              .map((order) => (
+                <div className="order-history-card" key={order.id}>
+                  <h4>Order #{order.id}</h4>
+                  <p>Status: <strong>{order.status}</strong></p>
+                  <p>Payment: {order.payment_method}</p>
+                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+
+                  {order.items.map((item) => (
+                    <p key={item.id}>
+                      {item.item_name} × {item.quantity}
+                    </p>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              ))
+          )}
 
-        {/* SIDEBAR FOOTER */}
-        <div className="sidebar-footer">
-          {selectedShop ? (
-            <button
-              className="sidebar-cart-button"
-              onClick={() => setCartOpen(true)}
-            >
-              🛒 View Cart <span>{cartCount} items</span>
-            </button>
+          <h3>Previous Orders</h3>
+
+          {orders.filter((order) =>
+            ["Delivered", "Cancelled"].includes(order.status)
+          ).length === 0 ? (
+            <p>No previous orders.</p>
           ) : (
-            <span>Backyard Shopping System</span>
+            orders
+              .filter((order) =>
+                ["Delivered", "Cancelled"].includes(order.status)
+              )
+              .map((order) => (
+                <div className="order-history-card" key={order.id}>
+                  <h4>Order #{order.id}</h4>
+                  <p>Status: <strong>{order.status}</strong></p>
+                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                </div>
+              ))
           )}
         </div>
-      </aside>
+      )}
+    </section>
+  </div>
+)}
 
-      {/* MAP AREA */}
-      <section className="map-section">
-        <header className="map-header">
-          <div>
-            <h1>Explore Local Shops</h1>
-            <p>Find shops and restaurants around St. John's.</p>
-          </div>
-
-          <button
-            className="cart-button"
-            onClick={() => setCartOpen(true)}
+      {cartOpen && (
+        <div className="cart-overlay" onClick={() => setCartOpen(false)}>
+          <aside
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
           >
-            🛒 Cart
-            <span className="cart-count">{cartCount}</span>
-          </button>
-        </header>
+            {showPaymentMethods ? (
+              <PaymentMethods
+                total={cartTotal}
+                onBack={() => setShowPaymentMethods(false)}
+           
+onConfirm={async (method, address) => {
+  try {
+    const customerKey = getCustomerKey();
 
-        {/* TOAST */}
-        {toast && (
-          <div
-            className="toast-notification"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="toast-icon">✓</span>
+    const savedOrder = await createOrder({
+      customer_key: customerKey,
+      customer_name: address.customerName,
+      phone_number: address.phoneNumber,
+      delivery_address: [
+        address.streetAddress,
+        address.apartment,
+        address.city,
+        address.province,
+        address.postalCode,
+        address.countryRegion,
+      ]
+        .filter(Boolean)
+        .join(", "),
+      payment_method: method,
+      items: cart.map((cartItem) => ({
+        item_id: cartItem.item.id,
+        quantity: cartItem.quantity,
+        addons: cartItem.addons.map((addon) => addon.name),
+      })),
+    });
 
-            <div className="toast-content">
-              <strong>Added to cart!</strong>
-              <p>{toast}</p>
-            </div>
-          </div>
-        )}
+    // Show success only after the backend saves the order
+    setOrderConfirmation({
+      method,
+      address,
+      total: savedOrder.total_amount,
+    });
 
-        {/* MAP */}
-        <div className="map-area">
-          <MapView shops={shops} />
-        </div>
+    setCart([]);
+    setShowPaymentMethods(false);
+    setCartOpen(false);
 
-        {/* CART OVERLAY */}
-        {cartOpen && (
-          <div
-            className="cart-overlay"
-            onClick={() => setCartOpen(false)}
-          >
-            <aside
-              className="cart-panel"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {showPaymentMethods ? (
-                <PaymentMethods
-                  total={cartTotal}
-                  onBack={() => setShowPaymentMethods(false)}
-                  onConfirm={(method: PaymentMethod) => {
-                    alert(
-                      `You selected ${method}. Actual payment processing is not available yet.`
-                    );
-                  }}
-                />
-              ) : (
-                <>
-                  {/* CART HEADER */}
-                  <div className="cart-header">
-                    <div>
-                      <h2>Shopping Cart</h2>
-                      <p>{cartCount} items added</p>
-                    </div>
+  } catch (error) {
+    console.error("Order submission failed:", error);
 
-                    <button
-                      className="close-cart"
-                      onClick={() => setCartOpen(false)}
-                      aria-label="Close cart"
-                    >
-                      ×
-                    </button>
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Unable to submit your order. Please try again."
+    );
+  }
+}}
+
+              />
+            ) : (
+              <>
+                <div className="cart-header">
+                  <div>
+                    <h2>Shopping Cart</h2>
+                    <p>{cartCount} items added</p>
                   </div>
+                  <button
+                    className="close-cart"
+                    onClick={() => setCartOpen(false)}
+                    aria-label="Close cart"
+                  >
+                    ×
+                  </button>
+                </div>
 
-                  {/* CART ITEMS */}
-                  <div className="cart-items">
-                    {cart.length === 0 ? (
-                      <div className="empty-cart">
-                        <div>🛒</div>
-                        <h3>Your cart is empty</h3>
-                        <p>Add products from the shops.</p>
-                      </div>
-                    ) : (
-                      cart.map((cartItem) => (
-                        <div
-                          className="cart-item"
-                          key={cartItem.cartKey}
-                        >
+                <div className="cart-items">
+                  {cart.length === 0 ? (
+                    <div className="empty-cart">
+                      <div>🛒</div>
+                      <h3>Your cart is empty</h3>
+                      <p>Add food items from the menu.</p>
+                    </div>
+                  ) : (
+                    cart.map((cartItem) => {
+                      const addonTotal = cartItem.addons.reduce(
+                        (sum, addon) => sum + addon.price,
+                        0
+                      );
+
+                      return (
+                        <div className="cart-item" key={cartItem.cartKey}>
                           <div className="cart-item-info">
                             <h4>{cartItem.item.name}</h4>
                             <p>{cartItem.shopName}</p>
-
                             {cartItem.addons.length > 0 && (
                               <p>
                                 Extras:{" "}
@@ -826,16 +861,11 @@ function App() {
                                   .join(", ")}
                               </p>
                             )}
-
                             <strong>
                               $
                               {(
-                                (Number(cartItem.item.price) +
-                                  cartItem.addons.reduce(
-                                    (sum, addon) =>
-                                      sum + addon.price,
-                                    0
-                                  )) * cartItem.quantity
+                                (Number(cartItem.item.price) + addonTotal) *
+                                cartItem.quantity
                               ).toFixed(2)}
                             </strong>
                           </div>
@@ -844,31 +874,22 @@ function App() {
                             <div className="quantity-control">
                               <button
                                 onClick={() =>
-                                  updateQuantity(
-                                    cartItem.cartKey,
-                                    -1
-                                  )
+                                  updateQuantity(cartItem.cartKey, -1)
                                 }
                                 aria-label="Decrease quantity"
                               >
                                 −
                               </button>
-
                               <span>{cartItem.quantity}</span>
-
                               <button
                                 onClick={() =>
-                                  updateQuantity(
-                                    cartItem.cartKey,
-                                    1
-                                  )
+                                  updateQuantity(cartItem.cartKey, 1)
                                 }
                                 aria-label="Increase quantity"
                               >
                                 +
                               </button>
                             </div>
-
                             <button
                               className="remove-item"
                               onClick={() =>
@@ -879,34 +900,82 @@ function App() {
                             </button>
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* CART FOOTER */}
-                  {cart.length > 0 && (
-                    <div className="cart-footer">
-                      <div className="cart-total">
-                        <span>Total</span>
-                        <strong>${cartTotal.toFixed(2)}</strong>
-                      </div>
-
-                      <button
-                        className="checkout-button"
-                        onClick={() =>
-                          setShowPaymentMethods(true)
-                        }
-                      >
-                        Proceed to Checkout
-                      </button>
-                    </div>
+                      );
+                    })
                   )}
-                </>
-              )}
-            </aside>
-          </div>
-        )}
-      </section>
+                </div>
+
+                {cart.length > 0 && (
+                  <div className="cart-footer">
+                    <div className="cart-total">
+                      <span>Total</span>
+                      <strong>${cartTotal.toFixed(2)}</strong>
+                    </div>
+                    <button
+                      className="checkout-button"
+                      onClick={() => setShowPaymentMethods(true)}
+                    >
+                      Proceed to Checkout
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </aside>
+        </div>
+      )}
+            {/* ORDER SUCCESS CONFIRMATION */}
+      {orderConfirmation && (
+        <div className="order-success-overlay">
+          <section className="order-success-card">
+            <div className="order-success-icon">✓</div>
+
+            <h2>Order Submitted Successfully!</h2>
+
+            <p className="order-success-message">
+              Thank you for shopping with Backyard Shopping.
+              Your order has been submitted.
+            </p>
+
+            <div className="order-success-details">
+              <p>
+                <strong>Customer:</strong>{" "}
+                {orderConfirmation.address.customerName}
+              </p>
+
+              <p>
+                <strong>Payment Method:</strong>{" "}
+                {orderConfirmation.method}
+              </p>
+
+              <p>
+                <strong>Delivery Address:</strong>{" "}
+                {orderConfirmation.address.streetAddress}
+                {orderConfirmation.address.apartment &&
+                  `, ${orderConfirmation.address.apartment}`}
+                {`, ${orderConfirmation.address.city}, ${orderConfirmation.address.province}, ${orderConfirmation.address.postalCode}, ${orderConfirmation.address.countryRegion}`}
+              </p>
+
+              <p>
+                <strong>Phone:</strong>{" "}
+                {orderConfirmation.address.phoneNumber}
+              </p>
+
+              <p className="order-success-total">
+                <strong>Total Paid:</strong>{" "}
+                ${orderConfirmation.total.toFixed(2)}
+              </p>
+            </div>
+
+            <button
+              className="order-success-button"
+              onClick={() => setOrderConfirmation(null)}
+            >
+              Continue Shopping
+            </button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
