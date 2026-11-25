@@ -427,11 +427,12 @@ const toggleFavorite = (shopId: number) => {
   </select>
 
   <button
-    type="button"
-    onClick={() => setShowFavoritesOnly((previous) => !previous)}
-  >
-   git add frontend/src/App.tsx
-  </button>
+  type="button"
+  className={showFavoritesOnly ? "favorites-filter active" : "favorites-filter"}
+  onClick={() => setShowFavoritesOnly((previous) => !previous)}
+>
+  {showFavoritesOnly ? "❤️ Show All Restaurants" : "♡ Favorites Only"}
+</button>
 </div>
 
 <div className="favorite-shops">
