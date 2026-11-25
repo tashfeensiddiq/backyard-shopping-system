@@ -373,6 +373,17 @@ const toggleFavorite = (shopId: number) => {
   </button>
 </div>
 
+<div className="favorite-shops">
+  {restaurants.map((shop) => (
+    <button
+      key={shop.id}
+      type="button"
+      onClick={() => toggleFavorite(shop.id)}
+    >
+      {favoriteShopIds.includes(shop.id) ? "❤️" : "♡"} {shop.name}
+    </button>
+  ))}
+</div>
                   <div className="food-grid">
                     {availableItems.map((item, index) => (
                       <article
