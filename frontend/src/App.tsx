@@ -5,6 +5,13 @@ import PaymentMethods, {
   type DeliveryAddress,
 } from "./components/PaymentMethods";
 import { fetchShops } from "./services/shopService";
+import {
+  createOrder,
+  fetchOrders,
+  getCustomerKey,
+  type OrderResponse,
+} from "./services/orderService";
+
 import type { Shop, FoodItem } from "./types/shop";
 import "./App.css";
 
@@ -85,6 +92,11 @@ function App() {
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+
+const [orders, setOrders] = useState<OrderResponse[]>([]);
+const [ordersOpen, setOrdersOpen] = useState(false);
+const [ordersLoading, setOrdersLoading] = useState(false);
+const [ordersError, setOrdersError] = useState("");
 
   const [orderConfirmation, setOrderConfirmation] = useState<{
   method: PaymentMethod;
@@ -259,16 +271,43 @@ function App() {
           </h1>
           <p>Your neighbourhood, your marketplace</p>
         </div>
+{/* jkr */}
+        <div className="header-actions">
+  <button
+    className="top-orders-button"
+    onClick={async () => {
+      setOrdersOpen(true);
+      setOrdersLoading(true);
+      setOrdersError("");
 
-        <button
-          className="top-cart-button"
-          onClick={() => {
-            setShowPaymentMethods(false);
-            setCartOpen(true);
-          }}
-        >
-          🛒 Cart <span>{cartCount}</span>
-        </button>
+      try {
+        const customerKey = getCustomerKey();
+        const customerOrders = await fetchOrders(customerKey);
+        setOrders(customerOrders);
+      } catch (error) {
+        setOrdersError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load orders."
+        );
+      } finally {
+        setOrdersLoading(false);
+      }
+    }}
+  >
+    📦 Orders
+  </button>
+
+  <button
+    className="top-cart-button"
+    onClick={() => {
+      setShowPaymentMethods(false);
+      setCartOpen(true);
+    }}
+  >
+    🛒 Cart <span>{cartCount}</span>
+  </button>
+</div>
       </header>
 
       <div className="dashboard-layout">
@@ -574,6 +613,98 @@ function App() {
           </section>
         </div>
       )}
+    
+{ordersOpen && (
+  <div
+    className="cart-overlay"
+    onClick={() => setOrdersOpen(false)}
+  >
+    <section
+      className="cart-panel orders-panel"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="cart-header">
+        <div>
+          <h2>📦 My Orders</h2>
+          <p>Your current and previous orders</p>
+        </div>
+
+        <button
+          className="close-cart"
+          onClick={() => setOrdersOpen(false)}
+          aria-label="Close orders"
+        >
+          ×
+        </button>
+      </div>
+
+      {ordersLoading ? (
+        <p className="status-message">Loading your orders...</p>
+      ) : ordersError ? (
+        <p className="status-error">{ordersError}</p>
+      ) : orders.length === 0 ? (
+        <div className="empty-cart">
+          <div>📦</div>
+          <h3>No orders yet</h3>
+          <p>Your orders will appear here after checkout.</p>
+        </div>
+      ) : (
+        <div className="cart-items">
+          <h3>Current Orders</h3>
+
+          {orders.filter((order) =>
+            ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+              .includes(order.status)
+          ).length === 0 ? (
+            <p>No current orders.</p>
+          ) : (
+            orders
+              .filter((order) =>
+                ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+                  .includes(order.status)
+              )
+              .map((order) => (
+                <div className="order-history-card" key={order.id}>
+                  <h4>Order #{order.id}</h4>
+                  <p>Status: <strong>{order.status}</strong></p>
+                  <p>Payment: {order.payment_method}</p>
+                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+
+                  {order.items.map((item) => (
+                    <p key={item.id}>
+                      {item.item_name} × {item.quantity}
+                    </p>
+                  ))}
+                </div>
+              ))
+          )}
+
+          <h3>Previous Orders</h3>
+
+          {orders.filter((order) =>
+            ["Delivered", "Cancelled"].includes(order.status)
+          ).length === 0 ? (
+            <p>No previous orders.</p>
+          ) : (
+            orders
+              .filter((order) =>
+                ["Delivered", "Cancelled"].includes(order.status)
+              )
+              .map((order) => (
+                <div className="order-history-card" key={order.id}>
+                  <h4>Order #{order.id}</h4>
+                  <p>Status: <strong>{order.status}</strong></p>
+                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                </div>
+              ))
+          )}
+        </div>
+      )}
+    </section>
+  </div>
+)}
 
       {cartOpen && (
         <div className="cart-overlay" onClick={() => setCartOpen(false)}>
@@ -585,17 +716,55 @@ function App() {
               <PaymentMethods
                 total={cartTotal}
                 onBack={() => setShowPaymentMethods(false)}
-           onConfirm={(method, address) => {
-             setOrderConfirmation({
-                method,
-                 address,
-                  total: cartTotal,
-               });
+           
+onConfirm={async (method, address) => {
+  try {
+    const customerKey = getCustomerKey();
 
-                 setCart([]);
-                 setShowPaymentMethods(false);
-                  setCartOpen(false);
-                }}
+    const savedOrder = await createOrder({
+      customer_key: customerKey,
+      customer_name: address.customerName,
+      phone_number: address.phoneNumber,
+      delivery_address: [
+        address.streetAddress,
+        address.apartment,
+        address.city,
+        address.province,
+        address.postalCode,
+        address.countryRegion,
+      ]
+        .filter(Boolean)
+        .join(", "),
+      payment_method: method,
+      items: cart.map((cartItem) => ({
+        item_id: cartItem.item.id,
+        quantity: cartItem.quantity,
+        addons: cartItem.addons.map((addon) => addon.name),
+      })),
+    });
+
+    // Show success only after the backend saves the order
+    setOrderConfirmation({
+      method,
+      address,
+      total: savedOrder.total_amount,
+    });
+
+    setCart([]);
+    setShowPaymentMethods(false);
+    setCartOpen(false);
+
+  } catch (error) {
+    console.error("Order submission failed:", error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Unable to submit your order. Please try again."
+    );
+  }
+}}
+
               />
             ) : (
               <>
