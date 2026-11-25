@@ -90,7 +90,20 @@ function App() {
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  const [favoriteShopIds, setFavoriteShopIds] = useState<number[]>([]);
+const [favoriteShopIds, setFavoriteShopIds] = useState<number[]>(() => {
+  try {
+    const savedFavorites = localStorage.getItem("favoriteShopIds");
+    return savedFavorites ? JSON.parse(savedFavorites) : [];
+  } catch {
+    return [];
+  }
+});
+useEffect(() => {
+  localStorage.setItem(
+    "favoriteShopIds",
+    JSON.stringify(favoriteShopIds)
+  );
+}, [favoriteShopIds]);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -369,7 +382,7 @@ const toggleFavorite = (shopId: number) => {
     type="button"
     onClick={() => setShowFavoritesOnly((previous) => !previous)}
   >
-    {showFavoritesOnly ? "❤️ Show All Shops" : "♡ Show Favorites"}
+   git add frontend/src/App.tsx
   </button>
 </div>
 
