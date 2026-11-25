@@ -2073,29 +2073,7 @@ body,
     font-size: 12px;
   }
 }
-/* FAVORITES FILTER BUTTON */
-.favorites-filter {
-  padding: 9px 14px;
-  margin-left: 10px;
-  border: 1px solid #d7a1b5;
-  border-radius: 8px;
-  background: #fff5f8;
-  color: #a8325e;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
 
-.favorites-filter:hover {
-  background: #ffe3ed;
-  transform: translateY(-1px);
-}
-
-.favorites-filter.active {
-  background: #a8325e;
-  color: white;
-  border-color: #a8325e;
-}
 
 /* ================================
    Profile Button
