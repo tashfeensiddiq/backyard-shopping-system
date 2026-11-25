@@ -431,7 +431,7 @@ const toggleFavorite = (shopId: number) => {
   className={showFavoritesOnly ? "favorites-filter active" : "favorites-filter"}
   onClick={() => setShowFavoritesOnly((previous) => !previous)}
 >
-  {showFavoritesOnly ? "❤️ Show All Restaurants" : "♡ Favorites Only"}
+  {showFavoritesOnly ? "❤️ Show All Restaurants" : "❤️ Favorites Only"}
 </button>
 </div>
 
@@ -770,7 +770,7 @@ const toggleFavorite = (shopId: number) => {
                 total={cartTotal}
                 onBack={() => setShowPaymentMethods(false)}
            
-onConfirm={async (method, address) => {
+ onConfirm={async (method, address, promoCode) => {
   try {
     const customerKey = getCustomerKey();
 
@@ -789,6 +789,7 @@ onConfirm={async (method, address) => {
         .filter(Boolean)
         .join(", "),
       payment_method: method,
+      promo_code: promoCode,
       items: cart.map((cartItem) => ({
         item_id: cartItem.item.id,
         quantity: cartItem.quantity,
