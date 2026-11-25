@@ -2095,3 +2095,49 @@ body,
   color: white;
   border-color: #a8325e;
 }
+
+/* ================================
+   Profile Button
+================================ */
+
+.top-profile-button {
+  background: #ffffff;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.top-profile-button:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+/* Header Actions */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Responsive Header */
+
+@media (max-width: 768px) {
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .top-profile-button,
+  .top-orders-button,
+  .top-cart-button {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+}

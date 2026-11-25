@@ -13,6 +13,8 @@ import {
 } from "./services/orderService";
 
 import type { Shop, FoodItem } from "./types/shop";
+import ProfilePage from "./pages/ProfilePage";
+import { isAuthenticated } from "./services/authService";
 import "./App.css";
 
 interface Addon {
@@ -82,6 +84,7 @@ function getFoodCategory(name: string) {
 }
 
 function App() {
+  const [profileOpen, setProfileOpen] = useState(false);
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -293,6 +296,10 @@ const toggleFavorite = (shopId: number) => {
   };
 
   return (
+    <>
+      {profileOpen ? (
+        <ProfilePage onBack={() => setProfileOpen(false)} />
+      ) : (
     <main className="app-shell">
       <header className="top-header">
         <div className="brand">
@@ -306,6 +313,19 @@ const toggleFavorite = (shopId: number) => {
         </div>
 {/* jkr */}
         <div className="header-actions">
+  <button
+    className="top-orders-button"
+    onClick={() => {
+      if (!isAuthenticated()) {
+        alert("Please log in to access your profile.");
+        return;
+      }
+      setProfileOpen(true);
+    }}
+  >
+    👤 My Profile
+  </button>
+
   <button
     className="top-orders-button"
     onClick={async () => {
@@ -979,6 +999,8 @@ const toggleFavorite = (shopId: number) => {
         </div>
       )}
     </main>
+      )}
+    </>
   );
 }
 
