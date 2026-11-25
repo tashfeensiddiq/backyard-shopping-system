@@ -431,11 +431,7 @@ const toggleFavorite = (shopId: number) => {
   className={showFavoritesOnly ? "favorites-filter active" : "favorites-filter"}
   onClick={() => setShowFavoritesOnly((previous) => !previous)}
 >
-<<<<<<< HEAD
   {showFavoritesOnly ? "❤️ Show All Restaurants" : "❤️ Favorites Only"}
-=======
-  {showFavoritesOnly ? "❤️ Show All Restaurants" : "♡ Favorites Only"}
->>>>>>> origin/main
 </button>
 </div>
 
