@@ -430,7 +430,7 @@ const toggleFavorite = (shopId: number) => {
     type="button"
     onClick={() => setShowFavoritesOnly((previous) => !previous)}
   >
-   git add frontend/src/App.tsx
+    ♡ Favorites
   </button>
 </div>
 
@@ -769,7 +769,7 @@ const toggleFavorite = (shopId: number) => {
                 total={cartTotal}
                 onBack={() => setShowPaymentMethods(false)}
            
-onConfirm={async (method, address) => {
+ onConfirm={async (method, address, promoCode) => {
   try {
     const customerKey = getCustomerKey();
 
@@ -788,6 +788,7 @@ onConfirm={async (method, address) => {
         .filter(Boolean)
         .join(", "),
       payment_method: method,
+      promo_code: promoCode,
       items: cart.map((cartItem) => ({
         item_id: cartItem.item.id,
         quantity: cartItem.quantity,

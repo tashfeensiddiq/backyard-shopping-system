@@ -15,6 +15,7 @@ class OrderCreate(BaseModel):
     phone_number: str
     delivery_address: str
     payment_method: str
+    promo_code: str | None = None
     items: list[OrderItemCreate] = Field(min_length=1)
 
 
@@ -38,6 +39,8 @@ class OrderResponse(BaseModel):
     phone_number: str
     delivery_address: str
     payment_method: str
+    promo_code: str | None = None
+    discount_amount: float = 0.0
     total_amount: float
     status: str
     created_at: datetime
