@@ -9,5 +9,5 @@ class FoodItem(Base):
     shop_id = Column(Integer, ForeignKey("shops.id"), nullable=False)
     name = Column(String(150), nullable=False)
     description = Column(String(500))
-    price = Column(Float, nullable=False)
+    price = Column(Numeric(10, 2), nullable=False)
     is_available = Column(Boolean, default=True)
