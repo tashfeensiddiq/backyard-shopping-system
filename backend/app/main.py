@@ -1,8 +1,14 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.shops import router as shops_router
+from app.api.auth import router as auth_router
+
+# Import model so SQLAlchemy registers the User table
+from app.models.user import User
+
+from app.database import Base, engine
+
 
 app = FastAPI(
     title="Backyard Shopping System API",
@@ -23,7 +29,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register existing routes
 app.include_router(shops_router)
+
+# Register authentication routes
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+def create_tables():
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
