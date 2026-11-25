@@ -85,6 +85,13 @@ function App() {
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+
+  const [orderConfirmation, setOrderConfirmation] = useState<{
+  method: PaymentMethod;
+  address: DeliveryAddress;
+  total: number;
+} | null>(null);
+
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
@@ -578,16 +585,16 @@ function App() {
               <PaymentMethods
                 total={cartTotal}
                 onBack={() => setShowPaymentMethods(false)}
-                onConfirm={(
-                  method: PaymentMethod,
-                  address: DeliveryAddress
-                ) => {
-                  alert(
-                    `Payment Method: ${method}\n` +
-                      `Customer: ${address.customerName}\n` +
-                      `Delivery Address: ${address.streetAddress}, ${address.city}, ${address.province}, ${address.countryRegion}\n` +
-                      `Postal Code: ${address.postalCode}`
-                  );
+           onConfirm={(method, address) => {
+             setOrderConfirmation({
+                method,
+                 address,
+                  total: cartTotal,
+               });
+
+                 setCart([]);
+                 setShowPaymentMethods(false);
+                  setCartOpen(false);
                 }}
               />
             ) : (
@@ -694,6 +701,58 @@ function App() {
               </>
             )}
           </aside>
+        </div>
+      )}
+            {/* ORDER SUCCESS CONFIRMATION */}
+      {orderConfirmation && (
+        <div className="order-success-overlay">
+          <section className="order-success-card">
+            <div className="order-success-icon">✓</div>
+
+            <h2>Order Submitted Successfully!</h2>
+
+            <p className="order-success-message">
+              Thank you for shopping with Backyard Shopping.
+              Your order has been submitted.
+            </p>
+
+            <div className="order-success-details">
+              <p>
+                <strong>Customer:</strong>{" "}
+                {orderConfirmation.address.customerName}
+              </p>
+
+              <p>
+                <strong>Payment Method:</strong>{" "}
+                {orderConfirmation.method}
+              </p>
+
+              <p>
+                <strong>Delivery Address:</strong>{" "}
+                {orderConfirmation.address.streetAddress}
+                {orderConfirmation.address.apartment &&
+                  `, ${orderConfirmation.address.apartment}`}
+                {`, ${orderConfirmation.address.city}, ${orderConfirmation.address.province}, ${orderConfirmation.address.postalCode}, ${orderConfirmation.address.countryRegion}`}
+              </p>
+
+              <p>
+                <strong>Phone:</strong>{" "}
+                {orderConfirmation.address.phoneNumber}
+              </p>
+
+              <p className="order-success-total">
+                <strong>Total Paid:</strong>{" "}
+                ${orderConfirmation.total.toFixed(2)}
+              </p>
+            </div>
+
+            <button
+              className="order-success-button"
+              onClick={() => setOrderConfirmation(null)}
+            >
+              Continue Shopping
+            </button>
+          </section>
         </div>
       )}
     </main>

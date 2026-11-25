@@ -304,3 +304,109 @@
     padding: 16px;
   }
 }
+/* jkr */
+
+/* =========================================
+   CARD INFORMATION SECTION
+   ========================================= */
+
+.card-information-section {
+  padding: 21px;
+  margin: 0 0 25px;
+  border: 1px solid #0f4ea6;
+  border-radius: 15px;
+  background: #98ddee;
+}
+
+.card-information-section h3,
+.order-review-section h3 {
+  margin: 0 0 9px;
+  color: #070707;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.card-information-section .delivery-fields {
+  margin-top: 20px;
+}
+
+.card-information-section .payment-description {
+  color: #263449;
+}
+
+/* =========================================
+   ORDER REVIEW SECTION
+   ========================================= */
+
+.order-review-section {
+  width: 100%;
+}
+
+.order-review-card {
+  padding: 20px;
+  margin: 18px 0;
+  border: 1px solid #0f4ea6;
+  border-radius: 13px;
+  background: #98ddee;
+  color: #263449;
+}
+
+.order-review-card h4 {
+  margin: 0 0 15px;
+  color: #070707;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.order-review-card p {
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  color: #263449;
+}
+
+.order-review-card strong {
+  color: #2b3c74;
+}
+
+/* FINAL ORDER TOTAL */
+
+.order-review-section .payment-total {
+  padding: 20px 5px;
+  margin-top: 24px;
+  border-top: 1px solid #8c290a;
+  border-bottom: 1px solid #8c290a;
+}
+
+/* SUBMIT ORDER BUTTON */
+
+.order-review-section .payment-confirm-button {
+  background: #eb8b25;
+  color: #070707;
+  min-height: 52px;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.order-review-section .payment-confirm-button:hover {
+  background: #1dd8b9;
+}
+
+/* RESPONSIVE CHECKOUT */
+
+@media (max-width: 480px) {
+  .card-information-section {
+    padding: 16px;
+  }
+
+  .order-review-card {
+    padding: 16px;
+  }
+
+  .card-information-section h3,
+  .order-review-section h3 {
+    font-size: 17px;
+  }
+}
+/* jkr */
