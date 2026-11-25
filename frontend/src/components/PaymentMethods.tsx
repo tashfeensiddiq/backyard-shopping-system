@@ -18,10 +18,11 @@ export interface DeliveryAddress {
 interface PaymentMethodsProps {
   total: number;
   onBack: () => void;
-  onConfirm: (
-    method: PaymentMethod,
-    address: DeliveryAddress
-  ) => void;
+ onConfirm: (
+  method: PaymentMethod,
+  address: DeliveryAddress,
+  promoCode: string | null
+ ) => void;
 }
 
 type CheckoutStep = "address" | "card" | "review";
@@ -32,6 +33,10 @@ function PaymentMethods({
   onConfirm,
 }: PaymentMethodsProps) {
   const [step, setStep] = useState<CheckoutStep>("address");
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState("");
+  const [promoError, setPromoError] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
 
   const [selectedMethod, setSelectedMethod] =
     useState<PaymentMethod>("Visa");
@@ -100,10 +105,30 @@ function PaymentMethods({
     e.preventDefault();
     setStep("review");
   };
+/* promo code hendle jkr */
+const handleApplyPromo = () => {
+  const code = promoCode.trim().toUpperCase();
 
+  setPromoError("");
+  setAppliedPromo("");
+  setDiscountAmount(0);
+
+  if (code === "WELCOME10") {
+    setAppliedPromo(code);
+    setDiscountAmount(Number((total * 0.10).toFixed(2)));
+  } else if (code === "SAVE5" && total >= 20) {
+    setAppliedPromo(code);
+    setDiscountAmount(5);
+  } else if (code === "FOOD20" && total >= 30) {
+    setAppliedPromo(code);
+    setDiscountAmount(Number((total * 0.20).toFixed(2)));
+  } else {
+    setPromoError("Invalid promo code or minimum order amount not reached.");
+  }
+};
   const handleFinalSubmit = () => {
-    onConfirm(selectedMethod, address);
-  };
+  onConfirm(selectedMethod, address, appliedPromo || null);
+};
 
   return (
     <div className="payment-container">
@@ -249,12 +274,43 @@ function PaymentMethods({
               ))}
             </div>
           </div>
+<div className="promo-code-section">
+  <h3>Promo Code</h3>
 
-          <div className="payment-total">
-            <span>Total Amount</span>
-            <strong>${total.toFixed(2)}</strong>
-          </div>
+  <div className="promo-code-controls">
+    <input
+      type="text"
+      placeholder="Enter promo code"
+      value={promoCode}
+      onChange={(e) => setPromoCode(e.target.value)}
+    />
 
+    <button type="button" onClick={handleApplyPromo}>
+      Apply
+    </button>
+  </div>
+
+  {appliedPromo && (
+    <p className="promo-success">
+      {appliedPromo} applied successfully!
+    </p>
+  )}
+
+  {promoError && (
+    <p className="promo-error">{promoError}</p>
+  )}
+</div>
+          {discountAmount > 0 && (
+  <div className="payment-total">
+    <span>Discount ({appliedPromo})</span>
+    <strong>-${discountAmount.toFixed(2)}</strong>
+  </div>
+)}
+
+<div className="payment-total">
+  <span>Total Amount</span>
+  <strong>${(total - discountAmount).toFixed(2)}</strong>
+</div>
           <button
             type="submit"
             className="payment-confirm-button"
@@ -399,10 +455,17 @@ function PaymentMethods({
             )}
           </div>
 
-          <div className="payment-total">
-            <span>Final Total Amount</span>
-            <strong>${total.toFixed(2)}</strong>
-          </div>
+         {discountAmount > 0 && (
+  <div className="payment-total">
+    <span>Discount ({appliedPromo})</span>
+    <strong>-${discountAmount.toFixed(2)}</strong>
+  </div>
+)}
+
+<div className="payment-total">
+  <span>Final Total Amount</span>
+  <strong>${(total - discountAmount).toFixed(2)}</strong>
+</div>
 
           <button
             type="button"

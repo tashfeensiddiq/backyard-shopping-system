@@ -8,6 +8,7 @@ export interface OrderCreatePayload {
   phone_number: string;
   delivery_address: string;
   payment_method: string;
+  promo_code?: string | null;
   items: {
     item_id: number;
     quantity: number;
@@ -35,6 +36,8 @@ export interface OrderResponse {
   phone_number: string;
   delivery_address: string;
   payment_method: string;
+  promo_code?: string | null;
+  discount_amount: number;
   total_amount: number;
   status: string;
   created_at: string;

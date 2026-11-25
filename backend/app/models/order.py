@@ -20,6 +20,10 @@ class Order(Base):
 
     payment_method = Column(String(50), nullable=False)
 
+    promo_code = Column(String(50), nullable=True)
+    
+    discount_amount = Column(Float, nullable=False, default=0.0)
+
     total_amount = Column(Float, nullable=False)
 
     status = Column(

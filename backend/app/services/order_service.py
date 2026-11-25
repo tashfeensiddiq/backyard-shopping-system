@@ -19,7 +19,24 @@ ADDON_PRICES = {
     "Sriracha Sauce": 0.75,
     "Extra Cheese": 1.00,
 }
-
+# Discount price
+PROMO_CODES = {
+    "WELCOME10": {
+        "type": "percentage",
+        "value": 10,
+        "minimum": 0,
+    },
+    "SAVE5": {
+        "type": "fixed",
+        "value": 5,
+        "minimum": 20,
+    },
+    "FOOD20": {
+        "type": "percentage",
+        "value": 20,
+        "minimum": 30,
+    },
+}
 
 def create_order(order_data: OrderCreate) -> OrderResponse:
     db = SessionLocal()
@@ -73,6 +90,57 @@ def create_order(order_data: OrderCreate) -> OrderResponse:
                     if item_data.addons else None
                 )
             )
+# Validate and calculate promo code discount
+
+        promo_code = (
+            order_data.promo_code.strip().upper()
+            if order_data.promo_code
+            else None
+        )
+
+        discount_amount = 0.0
+
+        if promo_code:
+            promo = PROMO_CODES.get(promo_code)
+
+            if not promo:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid promo code."
+                )
+
+            if total_amount < promo["minimum"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Minimum order amount is ${promo['minimum']}."
+                )
+
+            if promo_code == "WELCOME10":
+                previous_orders = (
+                    db.query(Order)
+                    .filter(
+                        Order.customer_key == order_data.customer_key
+                    )
+                    .count()
+                )
+
+                if previous_orders > 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="WELCOME10 is only for first-time customers."
+                    )
+
+            if promo["type"] == "percentage":
+                discount_amount = total_amount * promo["value"] / 100
+            else:
+                discount_amount = promo["value"]
+
+            discount_amount = min(
+                round(discount_amount, 2),
+                total_amount
+            )
+
+        final_total = round(total_amount - discount_amount, 2)
 
         new_order = Order(
             customer_key=order_data.customer_key,
@@ -80,7 +148,9 @@ def create_order(order_data: OrderCreate) -> OrderResponse:
             phone_number=order_data.phone_number,
             delivery_address=order_data.delivery_address,
             payment_method=order_data.payment_method,
-            total_amount=round(total_amount, 2),
+   promo_code=promo_code,
+   discount_amount=discount_amount,
+   total_amount=final_total,
             status="Pending",
             items=order_items
         )

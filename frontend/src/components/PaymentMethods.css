@@ -409,4 +409,94 @@
     font-size: 17px;
   }
 }
-/* jkr */
+/* jkr promo code */
+
+/* =========================================
+   PROMO CODE SECTION
+   ========================================= */
+
+.promo-code-section {
+  padding: 20px;
+  margin: 20px 0 25px;
+  border: 1px solid #0f4ea6;
+  border-radius: 15px;
+  background: #98ddee;
+}
+
+.promo-code-section h3 {
+  margin: 0 0 14px;
+  color: #070707;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.promo-code-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.promo-code-controls input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #114d92;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #263449;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.promo-code-controls input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.promo-code-controls button {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 9px;
+  background: #eb8b25;
+  color: #070707;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.promo-code-controls button:hover {
+  background: #1dd8b9;
+  transform: translateY(-2px);
+}
+
+.promo-success {
+  margin: 12px 0 0;
+  color: #087443;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.promo-error {
+  margin: 12px 0 0;
+  color: #c62828;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* PROMO CODE MOBILE RESPONSIVE */
+
+@media (max-width: 480px) {
+  .promo-code-section {
+    padding: 16px;
+  }
+
+  .promo-code-controls {
+    gap: 7px;
+  }
+
+  .promo-code-controls button {
+    padding: 12px 15px;
+  }
+}
