@@ -41,37 +41,26 @@ try:
         db.add_all([boutique, general_shop, restaurant])
         db.flush()
 
-        # food_items = [
-        #     FoodItem(shop_id=restaurant.id, name="Classic Beef Burger",
-        #              description="Beef burger", price=12.99),
-        #     FoodItem(shop_id=restaurant.id, name="Chicken Burger",
-        #              description="Chicken burger", price=11.99),
-        #     FoodItem(shop_id=restaurant.id, name="Margherita Pizza",
-        #              description="Classic cheese pizza", price=14.99),
-        #     FoodItem(shop_id=restaurant.id, name="Chicken Pizza",
-        #              description="Chicken pizza", price=16.99),
-        #     FoodItem(shop_id=restaurant.id, name="Fish and Chips",
-        #              description="Fish with fries", price=15.99),
-        #     FoodItem(shop_id=restaurant.id, name="Poutine",
-        #              description="Fries with cheese curds and gravy",
-        #              price=9.99),
-        #     FoodItem(shop_id=restaurant.id, name="French Fries",
-        #              description="Crispy fries", price=5.99),
-        #     FoodItem(shop_id=restaurant.id, name="Soft Drinks",
-        #              description="Assorted soft drinks", price=2.99),
-        # ]
         food_items = [
-    FoodItem(shop_id=boutique.id, name="Classic T-Shirt",
-             description="Cotton casual t-shirt", price=19.99),
-    FoodItem(shop_id=boutique.id, name="Denim Jeans",
-             description="Classic blue denim jeans", price=49.99),
-    FoodItem(shop_id=boutique.id, name="Casual Hoodie",
-             description="Comfortable everyday hoodie", price=39.99),
-    FoodItem(shop_id=boutique.id, name="Summer Dress",
-             description="Lightweight summer dress", price=45.99),
-    FoodItem(shop_id=boutique.id, name="Leather Wallet",
-             description="Minimalist leather wallet", price=24.99),
-]
+            FoodItem(shop_id=restaurant.id, name="Classic Beef Burger",
+                     description="Beef burger", price=12.99),
+            FoodItem(shop_id=restaurant.id, name="Chicken Burger",
+                     description="Chicken burger", price=11.99),
+            FoodItem(shop_id=restaurant.id, name="Margherita Pizza",
+                     description="Classic cheese pizza", price=14.99),
+            FoodItem(shop_id=restaurant.id, name="Chicken Pizza",
+                     description="Chicken pizza", price=16.99),
+            FoodItem(shop_id=restaurant.id, name="Fish and Chips",
+                     description="Fish with fries", price=15.99),
+            FoodItem(shop_id=restaurant.id, name="Poutine",
+                     description="Fries with cheese curds and gravy",
+                     price=9.99),
+            FoodItem(shop_id=restaurant.id, name="French Fries",
+                     description="Crispy fries", price=5.99),
+            FoodItem(shop_id=restaurant.id, name="Soft Drinks",
+                     description="Assorted soft drinks", price=2.99),
+        ]
+
 
         db.add_all(food_items)
         db.commit()
