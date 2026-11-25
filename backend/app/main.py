@@ -1,9 +1,11 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.shops import router as shops_router
 from app.api.orders import router as orders_router
 from app.api.auth import router as auth_router
+from app.api.profile import router as profile_router
 
 # Import model so SQLAlchemy registers the User table
 from app.models.user import User
@@ -36,6 +38,9 @@ app.include_router(orders_router)
 
 # Register authentication routes
 app.include_router(auth_router)
+
+# Register user profile routes
+app.include_router(profile_router)
 
 
 @app.on_event("startup")
