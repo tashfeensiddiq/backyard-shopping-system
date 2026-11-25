@@ -1514,270 +1514,32 @@ button {
 
 }
 
-
-
-
-@media (max-width: 700px) {
-
-  .app-shell {
-
-    padding: 8px;
-
-  }
-
-
-
-  .dashboard-layout {
-
-    grid-template-columns: 1fr;
-
-  }
-
-
-
-  .right-sidebar {
-
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
-
-    align-items: start;
-
-  }
-
-
-
-  .mini-map {
-
-    height: 150px;
-
-  }
-
-
-
-  .food-grid {
-
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-  }
-
-}
-
-
-
-@media (max-width: 450px) {
-
-  .top-header {
-
-    padding: 11px;
-
-  }
-
-
-
-  .brand h1 {
-
-    font-size: 17px;
-
-  }
-
-
-
-  .brand p {
-
-    font-size: 9px;
-
-  }
-
-
-
-  .top-cart-button {
-
-    padding: 9px 10px;
-
-    font-size: 10px;
-
-  }
-
-
-
-  .welcome-banner {
-
-    min-height: 145px;
-
-    padding: 14px;
-
-  }
-
-
-
-  .welcome-copy h2 {
-
-    font-size: 20px;
-
-  }
-
-
-
-  .welcome-illustration {
-
-    margin: 0;
-
-    font-size: 43px;
-
-  }
-
-
-
-  .right-sidebar {
-
-    grid-template-columns: 1fr;
-
-  }
-
-
-
-  .food-grid {
-
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-  }
-
-}
-
-/* jkr */
-
-
-
-/* Allow the homepage to scroll vertically */
-
-html,
-
-body,
-
-#root {
-
-  min-height: 100%;
-
-  height: auto;
-
-  overflow-x: hidden;
-
-  overflow-y: auto;
-
-}
-
-
-
-.app-shell {
-
-  min-height: 100vh;
-
-  height: auto;
-
-  overflow: visible;
-
-}
-
-
-
-.dashboard-layout {
-
-  flex: 1 0 auto;
-
-  min-height: 0;
-
-  overflow: visible;
-
-}
-
-
-
-.main-content {
-
-  min-height: 0;
-
-  overflow: visible;
-
-}
-
-
-
-.food-grid {
-
-  padding-bottom: 20px;
-
-}
-
-
-
-.page-footer {
-
-  padding-bottom: 20px;
-
-}
-
-
-
-/* Showing menu from resize */
-
-.restaurant-selector {
-
-  font-size: 18px;
-
-  font-weight: 600;
-
-}
-
-
-
-.restaurant-selector select {
-
-  font-size: 13px;
-
-  font-weight: 600;
-
-  padding: 8px 12px;
-
-}
-
-
-
-/* jkr */
-
-
-/* FOOD ADD-ONS SECTION */
+/* ==============================
+   FOOD ADD-ONS SECTION
+================================ */
 
 
 
 .addons-section {
-
-  margin-top: 12px;
-
-  padding: 12px;
-
+  margin-top: 14px;
+  padding: 15px;
   border-top: 1px solid #e5e7eb;
-
-  background: #f8faff;
-
-  border-radius: 8px;
-
+  background: linear-gradient(145deg, #f8faff, #f1f5ff);
+  border: 1px solid #e5eaf5;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 
 
 
 .addons-section h4 {
-
-  margin: 0 0 12px;
-
-  font-size: 14px;
-
-  color: #202b3c;
-
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-
-
+/* Individual addon row */
 .addon-option {
 
   display: flex;
@@ -1785,13 +1547,20 @@ body,
   justify-content: space-between;
 
   align-items: center;
-
+  gap: 12px;
   margin-bottom: 10px;
-
+  padding: 9px 10px;
   font-size: 13px;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #e8edf5;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-  color: #555;
-
+.addon-option:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.06);
 }
 
 
@@ -1801,11 +1570,9 @@ body,
   display: flex;
 
   align-items: center;
-
-  gap: 8px;
-
+  gap: 9px;
   cursor: pointer;
-
+  flex: 1;
 }
 
 
@@ -1815,27 +1582,22 @@ body,
   accent-color: #2563eb;
 
   cursor: pointer;
-
-  width: 15px;
-
-  height: 15px;
-
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-
-
+/* Addon price */
 .addon-price {
 
   color: #2563eb;
 
   font-size: 12px;
-
-  font-weight: bold;
-
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-
-
+/* Confirm addon button */
 .addon-confirm-button {
 
   width: 100%;
@@ -1861,292 +1623,75 @@ body,
 
 
 .addon-confirm-button:hover {
-
-  background: #1d4ed8;
-
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
 }
 
+.addon-confirm-button:active {
+  transform: scale(0.98);
+}
 
+.addon-confirm-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
 
+/* Addon total display */
 .addon-total {
 
   display: flex;
 
   justify-content: space-between;
-
-  margin-top: 12px;
-
-  padding-top: 10px;
-
-  border-top: 1px solid #e5e7eb;
-
-  font-size: 13px;
-
-  font-weight: bold;
-
-  color: #202b3c;
-
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #dbe3ef;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-
-
+/* Addon button inside food card bottom */
 .food-card-bottom .addon-confirm-button {
 
   width: auto;
 
   margin-top: 0;
-
-  padding: 9px 12px;
-
+  padding: 9px 14px;
   font-size: 12px;
-
-}
-
-/* =========================================
-   ORDER SUCCESS CONFIRMATION
-   ========================================= */
-
-.order-success-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(15, 30, 55, 0.65);
-}
-
-.order-success-card {
-  width: 100%;
-  max-width: 480px;
-  padding: 32px;
-  border-radius: 18px;
-  background: #ffffff;
-  color: #263449;
-  text-align: center;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
-}
-
-.order-success-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 65px;
-  height: 65px;
-  margin: 0 auto 18px;
-  border-radius: 50%;
-  background: #d8f8e5;
-  color: #16834a;
-  font-size: 36px;
-  font-weight: 800;
-}
-
-.order-success-card h2 {
-  margin-bottom: 12px;
-  color: #2b3c74;
-  font-size: 23px;
-}
-
-.order-success-message {
-  margin-bottom: 22px;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.order-success-details {
-  padding: 18px;
-  margin-bottom: 22px;
-  border-radius: 12px;
-  background: #eaf5fc;
-  text-align: left;
-}
-
-.order-success-details p {
-  margin: 10px 0;
-  font-size: 13px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-
-.order-success-total {
-  padding-top: 12px;
-  border-top: 1px solid #b8c9e5;
-  color: #2563eb;
-  font-size: 16px !important;
-}
-
-.order-success-button {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  background: #eb8b25;
-  color: #070707;
-  font-size: 14px;
-  font-weight: 750;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.order-success-button:hover {
-  background: #1dd8b9;
-}
-
-@media (max-width: 480px) {
-  .order-success-card {
-    padding: 22px;
-  }
-
-  .order-success-card h2 {
-    font-size: 20px;
-  }
-}
-
-/* ORDERS HEADER BUTTON */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.top-orders-button {
-  padding: 12px 18px;
-  border: 1px solid #f5f5f5;
-  border-radius: 10px;
-  background: #5fb3b1;
-  color: #f0f2f4;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.top-orders-button:hover {
-  background: #dadde1;
-  border-color: #1b0678;
-}
-
-/* ORDERS PANEL */
-.orders-panel {
-  max-width: 550px;
-  overflow-y: auto;
-}
-
-/* INDIVIDUAL ORDER CARD */
-.order-history-card {
-  padding: 16px;
-  margin: 12px 0;
-  border: 1px solid #e1e8f0;
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.order-history-card h4 {
-  margin: 0 0 10px;
-  color: #26364a;
-  font-size: 16px;
-}
-
-.order-history-card p {
-  margin: 7px 0;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-#test
-.orders-panel .cart-items h3 {
-  margin: 20px 0 12px;
-  color: #26364a;
-}
-
-/* MOBILE RESPONSIVENESS */
-@media (max-width: 600px) {
-  .header-actions {
-    gap: 6px;
-  }
-
-  .top-orders-button {
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-}
-/* Favorites Filter Button */
-.favorites-filter {
-  background-color: #ffffff;
-  color: #e63946;
-  border: 2px solid #e63946;
-  padding: 10px 18px;
   border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-/* Hover Effect */
-.favorites-filter:hover {
-  background-color: #fff0f0;
-  transform: translateY(-2px);
-}
-
-/* Active State - Favorites Only */
-.favorites-filter.active {
-  background-color: #e63946;
-  color: #ffffff;
-  border-color: #e63946;
-}
-
-/* Active Hover */
-.favorites-filter.active:hover {
-  background-color: #c92c3a;
-  border-color: #c92c3a;
-}
-
-/* ================================
-   Profile Button
+/* ==============================
+   RESPONSIVE ADD-ONS
 ================================ */
 
-.top-profile-button {
-  background: #ffffff;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.top-profile-button:hover {
-  background: #f0fdf4;
-  border-color: #86efac;
-  transform: translateY(-1px);
-}
-
-/* Header Actions */
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Responsive Header */
-
-@media (max-width: 768px) {
-  .header-actions {
-    flex-wrap: wrap;
-    justify-content: center;
+@media (max-width: 480px) {
+  .addons-section {
+    padding: 12px;
+    border-radius: 10px;
   }
 
-  .top-profile-button,
-  .top-orders-button,
-  .top-cart-button {
+  .addons-section h4 {
+    font-size: 14px;
+  }
+
+  .addon-option {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .addon-price {
+    font-size: 11px;
+  }
+
+  .addon-confirm-button {
+    padding: 10px;
     font-size: 13px;
-    padding: 9px 12px;
+  }
+
+  .addon-total {
+    font-size: 13px;
   }
 }

@@ -619,100 +619,113 @@ const toggleFavorite = (shopId: number) => {
                 <h2>Customize your item</h2>
                 <p>{selectedItem.name}</p>
               </div>
-              <button
-                className="close-cart"
-                onClick={() => {
-                  setSelectedItem(null);
-                  setSelectedAddons([]);
-                }}
-                aria-label="Close customization"
-              >
-                ×
-              </button>
-            </div>
 
-            <div className="cart-items">
-              <h3>Choose your add-ons</h3>
-              {ADDON_OPTIONS.map((addon) => {
-                const checked = selectedAddons.some(
-                  (selected) => selected.name === addon.name
-                );
+              {selectedItem?.id === item.id && (
+                <div className="addons-section">
+                  <h4>Choose Your Add-ons</h4>
 
-                return (
-                  <div className="addon-option" key={addon.name}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          setSelectedAddons((previous) =>
-                            checked
-                              ? previous.filter(
-                                  (selected) => selected.name !== addon.name
-                                )
-                              : [...previous, addon]
-                          );
-                        }}
-                      />
-                      {addon.name}
-                    </label>
-                    <span className="addon-price">
-                      +${addon.price.toFixed(2)}
+                  {ADDON_OPTIONS.map((addon) => (
+                    <div
+                      className="addon-option"
+                      key={addon.name}
+                    >
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selectedAddons.some(
+                            (selected) =>
+                              selected.name === addon.name
+                          )}
+                          onChange={() => {
+                            setSelectedAddons((previous) =>
+                              previous.some(
+                                (selected) =>
+                                  selected.name === addon.name
+                              )
+                                ? previous.filter(
+                                    (selected) =>
+                                      selected.name !== addon.name
+                                  )
+                                : [...previous, addon]
+                            );
+                          }}
+                        />
+                        {addon.name}
+                      </label>
+
+                      <span className="addon-price">
+                        +${addon.price.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+
+                  <div className="addon-total">
+                    <span>Extra Charges:</span>
+                    <span>
+                      ${selectedAddons
+                        .reduce(
+                          (sum, addon) => sum + addon.price,
+                          0
+                        )
+                        .toFixed(2)}
                     </span>
                   </div>
-                );
-              })}
 
-              <div className="addon-total">
-                <span>Item price:</span>
-                <strong>${Number(selectedItem.price).toFixed(2)}</strong>
-              </div>
-              <div className="addon-total">
-                <span>Extra charges:</span>
-                <strong>
-                  $
-                  {selectedAddons
-                    .reduce((sum, addon) => sum + addon.price, 0)
-                    .toFixed(2)}
-                </strong>
-              </div>
-            </div>
+                  <button
+                    className="addon-confirm-button"
+                    onClick={() => {
+                      addToCart(
+                        item,
+                        restaurant.name,
+                        selectedAddons
+                      );
+                      setSelectedItem(null);
+                      setSelectedAddons([]);
+                    }}
+                  >
+                    Add to Cart
+                  </button>
 
-            <div className="cart-footer">
-              <button
-                className="checkout-button"
-                onClick={confirmCustomization}
-              >
-                Add to Cart
-              </button>
-              <button
-                className="remove-item"
-                onClick={() => {
-                  setSelectedItem(null);
-                  setSelectedAddons([]);
-                }}
-              >
-                Cancel
-              </button>
+                  <button
+                    className="remove-item"
+                    onClick={() => {
+                      setSelectedItem(null);
+                      setSelectedAddons([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
-          </section>
-        </div>
-      )}
-    
-{ordersOpen && (
-  <div
-    className="cart-overlay"
-    onClick={() => setOrdersOpen(false)}
-  >
-    <section
-      className="cart-panel orders-panel"
-      onClick={(event) => event.stopPropagation()}
-    >
-      <div className="cart-header">
-        <div>
-          <h2>📦 My Orders</h2>
-          <p>Your current and previous orders</p>
-        </div>
+          ))}
+      </div>
+    </>
+  )}
+
+  {!loading && !error && !restaurant && (
+    <p className="sidebar-message">
+      No restaurants are currently available.
+    </p>
+  )}
+
+  <div className="sidebar-footer">
+    <span>Backyard Shopping System</span>
+  </div>
+
+</aside>
+
+      {/* MAP AREA */}
+      <section className="map-section">
+
+        {/* HEADER */}
+        <header className="map-header">
+          <div>
+            <h1>Explore Local Shops</h1>
+            <p>
+              Find shops and restaurants around St. John's.
+            </p>
+          </div>
 
         <button
           className="close-cart"
