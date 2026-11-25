@@ -28,15 +28,6 @@ try:
             is_active=True
         )
 
-        restaurant = Shop(
-            name="Harbour Bites Restaurant",
-            description="A demo restaurant serving popular meals.",
-            category="Restaurant",
-            address="East End, St. John's, NL, Canada",
-            latitude=47.5740,
-            longitude=-52.6900,
-            is_active=True
-        )
 
         db.add_all([boutique, general_shop, restaurant])
         db.flush()
