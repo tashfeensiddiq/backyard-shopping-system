@@ -1,3 +1,5 @@
+
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import PaymentMethods, {
@@ -14,6 +16,7 @@ import {
 
 import type { Shop, FoodItem } from "./types/shop";
 import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
 import { isAuthenticated } from "./services/authService";
 import "./App.css";
 
@@ -84,6 +87,7 @@ function getFoodCategory(name: string) {
 }
 
 function App() {
+  const [authOpen, setAuthOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
@@ -297,7 +301,15 @@ const toggleFavorite = (shopId: number) => {
 
   return (
     <>
-      {profileOpen ? (
+      {authOpen ? (
+        <AuthPage
+          onBack={() => setAuthOpen(false)}
+          onLoginSuccess={() => {
+            setAuthOpen(false);
+            setProfileOpen(true);
+          }}
+        />
+      ) : profileOpen ? (
         <ProfilePage onBack={() => setProfileOpen(false)} />
       ) : (
     <main className="app-shell">
@@ -316,11 +328,11 @@ const toggleFavorite = (shopId: number) => {
   <button
     className="top-orders-button"
     onClick={() => {
-      if (!isAuthenticated()) {
-        alert("Please log in to access your profile.");
-        return;
+      if (isAuthenticated()) {
+        setProfileOpen(true);
+      } else {
+        setAuthOpen(true);
       }
-      setProfileOpen(true);
     }}
   >
     👤 My Profile
