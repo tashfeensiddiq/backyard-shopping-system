@@ -506,3 +506,155 @@
   }
 }
 
+/* ==============================
+   FOOD ADD-ONS SECTION
+================================ */
+
+.addons-section {
+  margin-top: 14px;
+  padding: 15px;
+  border-top: 1px solid #e5e7eb;
+  background: linear-gradient(145deg, #f8faff, #f1f5ff);
+  border: 1px solid #e5eaf5;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.addons-section h4 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Individual addon row */
+.addon-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #e8edf5;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.addon-option:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.06);
+}
+
+.addon-option label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.addon-option input {
+  accent-color: #2563eb;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Addon price */
+.addon-price {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Confirm addon button */
+.addon-confirm-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.15);
+}
+
+.addon-confirm-button:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.addon-confirm-button:active {
+  transform: scale(0.98);
+}
+
+.addon-confirm-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+/* Addon total display */
+.addon-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #dbe3ef;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Addon button inside food card bottom */
+.food-card-bottom .addon-confirm-button {
+  width: auto;
+  margin-top: 0;
+  padding: 9px 14px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* ==============================
+   RESPONSIVE ADD-ONS
+================================ */
+
+@media (max-width: 480px) {
+  .addons-section {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .addons-section h4 {
+    font-size: 14px;
+  }
+
+  .addon-option {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .addon-price {
+    font-size: 11px;
+  }
+
+  .addon-confirm-button {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .addon-total {
+    font-size: 13px;
+  }
+}
