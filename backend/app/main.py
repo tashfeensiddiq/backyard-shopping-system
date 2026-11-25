@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.shops import router as shops_router
+from app.api.favorites import router as favorites_router
 
 app = FastAPI(
     title="Backyard Shopping System API",
@@ -24,6 +25,7 @@ app.add_middleware(
 )
 
 app.include_router(shops_router)
+app.include_router(favorites_router)
 
 
 @app.get("/")
