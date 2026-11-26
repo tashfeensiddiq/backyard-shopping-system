@@ -1,5 +1,3 @@
-
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import PaymentMethods, {
@@ -17,7 +15,7 @@ import {
 import type { Shop, FoodItem } from "./types/shop";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
-import { isAuthenticated } from "./services/authService";
+import { isAuthenticated, getUser } from "./services/authService";
 import "./App.css";
 
 interface Addon {
@@ -89,6 +87,7 @@ function getFoodCategory(name: string) {
 function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => getUser());
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,13 +142,10 @@ const displayedRestaurants = restaurants.filter((shop) =>
     ? favoriteShopIds.includes(shop.id)
     : true
 );
-
-const restaurant =
-  displayedRestaurants.find(
-    (shop) => shop.id === selectedShopId
-  ) ??
-  displayedRestaurants[0] ??
-  null;
+  const restaurant =
+    restaurants.find((shop) => shop.id === selectedShopId) ??
+    restaurants[0] ??
+    null;
 
   const availableItems = useMemo(() => {
     if (!restaurant) return [];
@@ -308,12 +304,16 @@ const toggleFavorite = (shopId: number) => {
         <AuthPage
           onBack={() => setAuthOpen(false)}
           onLoginSuccess={() => {
+            setCurrentUser(getUser());
             setAuthOpen(false);
             setProfileOpen(true);
           }}
         />
       ) : profileOpen ? (
-        <ProfilePage onBack={() => setProfileOpen(false)} />
+        <ProfilePage onBack={() => {
+          setCurrentUser(getUser());
+          setProfileOpen(false);
+        }} />
       ) : (
     <main className="app-shell">
       <header className="top-header">
@@ -329,16 +329,18 @@ const toggleFavorite = (shopId: number) => {
 {/* jkr */}
         <div className="header-actions">
   <button
-    className="top-orders-button"
+    className="top-profile-button"
     onClick={() => {
       if (isAuthenticated()) {
+        setCurrentUser(getUser());
         setProfileOpen(true);
       } else {
         setAuthOpen(true);
       }
     }}
   >
-    👤 My Profile
+    <span className="header-button-icon">👤</span>
+    <span>{currentUser?.name?.split(" ")[0] || (isAuthenticated() ? "My Profile" : "Login")}</span>
   </button>
 
   <button
@@ -363,7 +365,8 @@ const toggleFavorite = (shopId: number) => {
       }
     }}
   >
-    📦 Orders
+    <span className="header-button-icon">📦</span>
+    <span>Orders</span>
   </button>
 
   <button
@@ -373,10 +376,11 @@ const toggleFavorite = (shopId: number) => {
       setCartOpen(true);
     }}
   >
-    🛒 Cart <span>{cartCount}</span>
+    <span className="header-button-icon">🛒</span>
+    <span>Cart</span> <span className="cart-count-badge">{cartCount}</span>
   </button>
 </div>
-      </header>
+</header>
 
       <div className="dashboard-layout">
         <section className="main-content">
@@ -466,7 +470,7 @@ const toggleFavorite = (shopId: number) => {
   className={showFavoritesOnly ? "favorites-filter active" : "favorites-filter"}
   onClick={() => setShowFavoritesOnly((previous) => !previous)}
 >
-  {showFavoritesOnly ? "❤️ Show All Restaurants" : "♡ Favorites Only"}
+  {showFavoritesOnly ? "❤️ Show All Restaurants" : "❤️ Favorites Only"}
 </button>
 </div>
 
@@ -605,7 +609,7 @@ const toggleFavorite = (shopId: number) => {
         </div>
       )}
 
-       {selectedItem && (
+      {selectedItem && (
         <div
           className="cart-overlay"
           onClick={() => {
@@ -622,10 +626,8 @@ const toggleFavorite = (shopId: number) => {
                 <h2>Customize your item</h2>
                 <p>{selectedItem.name}</p>
               </div>
-
               <button
                 className="close-cart"
-                type="button"
                 onClick={() => {
                   setSelectedItem(null);
                   setSelectedAddons([]);
@@ -636,43 +638,44 @@ const toggleFavorite = (shopId: number) => {
               </button>
             </div>
 
-            <div className="addons-section">
-              <h4>Choose Your Add-ons</h4>
+            <div className="cart-items">
+              <h3>Choose your add-ons</h3>
+              {ADDON_OPTIONS.map((addon) => {
+                const checked = selectedAddons.some(
+                  (selected) => selected.name === addon.name
+                );
 
-              {ADDON_OPTIONS.map((addon) => (
-                <div
-                  className="addon-option"
-                  key={addon.name}
-                >
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={selectedAddons.some(
-                        (selected) => selected.name === addon.name
-                      )}
-                      onChange={() => {
-                        setSelectedAddons((previous) =>
-                          previous.some(
-                            (selected) => selected.name === addon.name
-                          )
-                            ? previous.filter(
-                                (selected) => selected.name !== addon.name
-                              )
-                            : [...previous, addon]
-                        );
-                      }}
-                    />
-                    {addon.name}
-                  </label>
-
-                  <span className="addon-price">
-                    +${addon.price.toFixed(2)}
-                  </span>
-                </div>
-              ))}
+                return (
+                  <div className="addon-option" key={addon.name}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedAddons((previous) =>
+                            checked
+                              ? previous.filter(
+                                  (selected) => selected.name !== addon.name
+                                )
+                              : [...previous, addon]
+                          );
+                        }}
+                      />
+                      {addon.name}
+                    </label>
+                    <span className="addon-price">
+                      +${addon.price.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
 
               <div className="addon-total">
-                <span>Extra Charges:</span>
+                <span>Item price:</span>
+                <strong>${Number(selectedItem.price).toFixed(2)}</strong>
+              </div>
+              <div className="addon-total">
+                <span>Extra charges:</span>
                 <strong>
                   $
                   {selectedAddons
@@ -680,17 +683,16 @@ const toggleFavorite = (shopId: number) => {
                     .toFixed(2)}
                 </strong>
               </div>
+            </div>
 
+            <div className="cart-footer">
               <button
-                type="button"
-                className="addon-confirm-button"
+                className="checkout-button"
                 onClick={confirmCustomization}
               >
                 Add to Cart
               </button>
-
               <button
-                type="button"
                 className="remove-item"
                 onClick={() => {
                   setSelectedItem(null);
@@ -703,103 +705,98 @@ const toggleFavorite = (shopId: number) => {
           </section>
         </div>
       )}
-      
+    
+{ordersOpen && (
+  <div
+    className="cart-overlay"
+    onClick={() => setOrdersOpen(false)}
+  >
+    <section
+      className="cart-panel orders-panel"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="cart-header">
+        <div>
+          <h2>📦 My Orders</h2>
+          <p>Your current and previous orders</p>
+        </div>
 
-        {/* ORDERS PANEL */}
-      {ordersOpen && (
-        <div
-          className="cart-overlay"
+        <button
+          className="close-cart"
           onClick={() => setOrdersOpen(false)}
+          aria-label="Close orders"
         >
-          <section
-            className="cart-panel"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {/* HEADER */}
-            <div className="cart-header">
-              <div>
-                <h2>My Orders</h2>
-                <p>Track your current and previous orders.</p>
-              </div>
+          ×
+        </button>
+      </div>
 
-              <button
-                className="close-cart"
-                type="button"
-                onClick={() => setOrdersOpen(false)}
-                aria-label="Close orders"
-              >
-                ×
-              </button>
-            </div>
+      {ordersLoading ? (
+        <p className="status-message">Loading your orders...</p>
+      ) : ordersError ? (
+        <p className="status-error">{ordersError}</p>
+      ) : orders.length === 0 ? (
+        <div className="empty-cart">
+          <div>📦</div>
+          <h3>No orders yet</h3>
+          <p>Your orders will appear here after checkout.</p>
+        </div>
+      ) : (
+        <div className="cart-items">
+          <h3>Current Orders</h3>
 
-            {ordersLoading ? (
-              <p className="status-message">Loading your orders...</p>
-            ) : ordersError ? (
-              <p className="status-error">{ordersError}</p>
-            ) : orders.length === 0 ? (
-              <div className="empty-cart">
-                <div>📦</div>
-                <h3>No orders yet</h3>
-                <p>Your orders will appear here after checkout.</p>
-              </div>
-            ) : (
-              <div className="cart-items">
-                <h3>Current Orders</h3>
+          {orders.filter((order) =>
+            ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+              .includes(order.status)
+          ).length === 0 ? (
+            <p>No current orders.</p>
+          ) : (
+            orders
+              .filter((order) =>
+                ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+                  .includes(order.status)
+              )
+              .map((order) => (
+                <div className="order-history-card" key={order.id}>
+                  <h4>Order #{order.id}</h4>
+                  <p>Status: <strong>{order.status}</strong></p>
+                  <p>Payment: {order.payment_method}</p>
+                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
 
-                {orders.filter((order) =>
-                  ["Pending", "Confirmed", "Preparing", "Out for delivery"]
-                    .includes(order.status)
-                ).length === 0 ? (
-                  <p>No current orders.</p>
-                ) : (
-                  orders
-                    .filter((order) =>
-                      ["Pending", "Confirmed", "Preparing", "Out for delivery"]
-                        .includes(order.status)
-                    )
-                    .map((order) => (
-                      <div className="order-history-card" key={order.id}>
-                        <h4>Order #{order.id}</h4>
-                        <p>Status: <strong>{order.status}</strong></p>
-                        <p>Payment: {order.payment_method}</p>
-                        <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
-                        <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                  {order.items.map((item) => (
+                    <p key={item.id}>
+                      {item.item_name} × {item.quantity}
+                    </p>
+                  ))}
+                </div>
+              ))
+          )}
 
-                        {order.items.map((item) => (
-                          <p key={item.id}>
-                            {item.item_name} × {item.quantity}
-                          </p>
-                        ))}
-                      </div>
-                    ))
-                )}
+          <h3>Previous Orders</h3>
 
-                <h3>Previous Orders</h3>
-
-                {orders.filter((order) =>
-                  ["Delivered", "Cancelled"].includes(order.status)
-                ).length === 0 ? (
-                  <p>No previous orders.</p>
-                ) : (
-                  orders
-                    .filter((order) =>
-                      ["Delivered", "Cancelled"].includes(order.status)
-                    )
-                    .map((order) => (
-                      <div className="order-history-card" key={order.id}>
-                        <h4>Order #{order.id}</h4>
-                        <p>Status: <strong>{order.status}</strong></p>
-                        <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
-                        <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                      </div>
-                    ))
-                )}
-              </div>
-            )}
-          </section>
+          {orders.filter((order) =>
+            ["Delivered", "Cancelled"].includes(order.status)
+          ).length === 0 ? (
+            <p>No previous orders.</p>
+          ) : (
+            orders
+              .filter((order) =>
+                ["Delivered", "Cancelled"].includes(order.status)
+              )
+              .map((order) => (
+                <div className="order-history-card" key={order.id}>
+                  <h4>Order #{order.id}</h4>
+                  <p>Status: <strong>{order.status}</strong></p>
+                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                </div>
+              ))
+          )}
         </div>
       )}
-
+    </section>
+  </div>
+)}
 
       {cartOpen && (
         <div className="cart-overlay" onClick={() => setCartOpen(false)}>
