@@ -602,7 +602,7 @@ const toggleFavorite = (shopId: number) => {
         </div>
       )}
 
-      {selectedItem && (
+       {selectedItem && (
         <div
           className="cart-overlay"
           onClick={() => {
@@ -620,85 +620,86 @@ const toggleFavorite = (shopId: number) => {
                 <p>{selectedItem.name}</p>
               </div>
 
-              {selectedItem?.id === item.id && (
-                <div className="addons-section">
-                  <h4>Choose Your Add-ons</h4>
-
-                  {ADDON_OPTIONS.map((addon) => (
-                    <div
-                      className="addon-option"
-                      key={addon.name}
-                    >
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={selectedAddons.some(
-                            (selected) =>
-                              selected.name === addon.name
-                          )}
-                          onChange={() => {
-                            setSelectedAddons((previous) =>
-                              previous.some(
-                                (selected) =>
-                                  selected.name === addon.name
-                              )
-                                ? previous.filter(
-                                    (selected) =>
-                                      selected.name !== addon.name
-                                  )
-                                : [...previous, addon]
-                            );
-                          }}
-                        />
-                        {addon.name}
-                      </label>
-
-                      <span className="addon-price">
-                        +${addon.price.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-
-                  <div className="addon-total">
-                    <span>Extra Charges:</span>
-                    <span>
-                      ${selectedAddons
-                        .reduce(
-                          (sum, addon) => sum + addon.price,
-                          0
-                        )
-                        .toFixed(2)}
-                    </span>
-                  </div>
-
-                  <button
-                    className="addon-confirm-button"
-                    onClick={() => {
-                      addToCart(
-                        item,
-                        restaurant.name,
-                        selectedAddons
-                      );
-                      setSelectedItem(null);
-                      setSelectedAddons([]);
-                    }}
-                  >
-                    Add to Cart
-                  </button>
-
-                  <button
-                    className="remove-item"
-                    onClick={() => {
-                      setSelectedItem(null);
-                      setSelectedAddons([]);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
+              <button
+                className="close-cart"
+                type="button"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+                aria-label="Close customization"
+              >
+                ×
+              </button>
             </div>
-          ))}
+
+            <div className="addons-section">
+              <h4>Choose Your Add-ons</h4>
+
+              {ADDON_OPTIONS.map((addon) => (
+                <div
+                  className="addon-option"
+                  key={addon.name}
+                >
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedAddons.some(
+                        (selected) => selected.name === addon.name
+                      )}
+                      onChange={() => {
+                        setSelectedAddons((previous) =>
+                          previous.some(
+                            (selected) => selected.name === addon.name
+                          )
+                            ? previous.filter(
+                                (selected) => selected.name !== addon.name
+                              )
+                            : [...previous, addon]
+                        );
+                      }}
+                    />
+                    {addon.name}
+                  </label>
+
+                  <span className="addon-price">
+                    +${addon.price.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+
+              <div className="addon-total">
+                <span>Extra Charges:</span>
+                <strong>
+                  $
+                  {selectedAddons
+                    .reduce((sum, addon) => sum + addon.price, 0)
+                    .toFixed(2)}
+                </strong>
+              </div>
+
+              <button
+                type="button"
+                className="addon-confirm-button"
+                onClick={confirmCustomization}
+              >
+                Add to Cart
+              </button>
+
+              <button
+                type="button"
+                className="remove-item"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setSelectedAddons([]);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       </div>
     </>
   )}
