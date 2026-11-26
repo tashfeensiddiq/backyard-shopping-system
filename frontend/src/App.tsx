@@ -698,7 +698,7 @@ const toggleFavorite = (shopId: number) => {
                 </div>
               )}
             </div>
-          ))}
+          }
       </div>
     </>
   )}
@@ -716,7 +716,7 @@ const toggleFavorite = (shopId: number) => {
 </aside>
 
       {/* MAP AREA */}
-      <section className="map-section">
+      <Selection className="map-section">
 
         {/* HEADER */}
         <header className="map-header">
