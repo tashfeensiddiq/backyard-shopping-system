@@ -1,8 +1,9 @@
+
 from datetime import datetime
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
@@ -13,7 +14,7 @@ from app.schemas.profile import ProfileResponse, ProfileUpdate
 
 router = APIRouter(prefix="/users", tags=["User Profile"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+bearer_scheme = HTTPBearer()
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
@@ -36,7 +37,7 @@ def get_db():
 # ==========================================
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db)
 ):
     if not SECRET_KEY:
@@ -44,6 +45,8 @@ def get_current_user(
             status_code=500,
             detail="JWT secret key is not configured."
         )
+
+    token = credentials.credentials
 
     try:
         payload = jwt.decode(
@@ -66,8 +69,16 @@ def get_current_user(
             detail="Invalid or expired authentication token."
         )
 
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid user identifier in token."
+        )
+
     user = db.query(User).filter(
-        User.id == int(user_id)
+        User.id == user_id
     ).first()
 
     if not user:
