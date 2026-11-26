@@ -10,9 +10,15 @@ import type { Shop } from "../types/shop";
 
 interface MapViewProps {
   shops: Shop[];
+  selectedShopId: number | null;
+  onSelectShop: (shop: Shop) => void;
 }
 
-const MapView = ({ shops }: MapViewProps) => {
+const MapView = ({
+  shops,
+  selectedShopId,
+  onSelectShop,
+}: MapViewProps) => {
   const position: [number, number] = [47.5615, -52.7126];
 
   return (
@@ -32,14 +38,18 @@ const MapView = ({ shops }: MapViewProps) => {
           <CircleMarker
             key={shop.id}
             center={[shop.latitude, shop.longitude]}
-            radius={9}
+            radius={selectedShopId === shop.id ? 12 : 9}
+            eventHandlers={{
+              click: () => onSelectShop(shop),
+            }}
             pathOptions={{
               color: "#ffffff",
               fillColor:
-                shop.category === "Restaurant"
-                  ? "#e65c36"
-                  : "#2563eb",
+                selectedShopId === shop.id
+                  ? "#2563eb"
+                  : "#e65c36",
               fillOpacity: 1,
+              weight: selectedShopId === shop.id ? 4 : 2,
             }}
           >
             <Popup>
@@ -47,18 +57,21 @@ const MapView = ({ shops }: MapViewProps) => {
                 <h3>{shop.name}</h3>
                 <p>{shop.description}</p>
                 <p>
-                  <strong>Category:</strong> {shop.category}
-                </p>
-                <p>
                   <strong>Address:</strong> {shop.address}
                 </p>
 
-                {shop.category === "Restaurant" && (
-                  <p>
-                    <strong>Available food items:</strong>{" "}
-                    {shop.items.filter(item => item.is_available).length}
-                  </p>
-                )}
+                <p>
+                  <strong>Available food items:</strong>{" "}
+                  {shop.items.filter(
+                    (item) => item.is_available
+                  ).length}
+                </p>
+
+                <button
+                  onClick={() => onSelectShop(shop)}
+                >
+                  View Menu
+                </button>
               </div>
             </Popup>
           </CircleMarker>

@@ -1,5 +1,6 @@
 from app.database import Base, engine
 from app.models import Shop, FoodItem
+from app.models.order import Order, OrderItem
 
 def create_tables():
     try:

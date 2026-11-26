@@ -1,0 +1,32 @@
+* [33mcc629e1[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Delete Assignment 01.zip
+*   [33m9f80897[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Merge pull request #5 from tashfeensiddiq/feature/payment-methods
+[32m|[m[33m\[m  
+[32m|[m * [33mc602de3[m[33m ([m[1;31morigin/feature/payment-methods[m[33m)[m Add payment method selection to checkout
+* [33m|[m   [33m089ece7[m Merge pull request #4 from tashfeensiddiq/shafiur-food-customization
+[34m|[m[35m\[m [33m\[m  
+[34m|[m * [33m|[m [33m624299b[m[33m ([m[1;31morigin/shafiur-food-customization[m[33m)[m Add food customization and cart add-ons
+[34m|[m[34m/[m [33m/[m  
+* [33m|[m   [33mc7b3882[m Merge branch 'main' of https://github.com/tashfeensiddiq/backyard-shopping-system
+[36m|[m[1;31m\[m [33m\[m  
+[36m|[m * [33m\[m   [33m5c425be[m Merge pull request #3 from tashfeensiddiq/dev/maun
+[36m|[m [1;32m|[m[1;33m\[m [33m\[m  
+[36m|[m [1;32m|[m * [33m|[m [33m8b533f5[m[33m ([m[1;31morigin/dev/maun[m[33m)[m Update shop_service.py
+* [1;32m|[m [1;33m|[m [33m|[m [33md79b153[m Food add on
+[1;32m|[m[1;32m/[m [1;33m/[m [33m/[m  
+* [1;33m|[m [33m|[m [33mcec0f58[m Merge branch 'main' of https://github.com/tashfeensiddiq/backyard-shopping-system
+[1;34m|[m[1;33m\[m[1;33m|[m [33m|[m 
+[1;34m|[m * [33m|[m [33m74a08e4[m update databse.py
+[1;34m|[m * [33m|[m [33m256c3b4[m Updated with eception handling
+[1;34m|[m [33m|[m[33m/[m  
+* [33m/[m [33mb4b9c05[m Food Add on Selection
+[33m|[m[33m/[m  
+*   [33m14b6b3c[m Merge pull request #2 from tashfeensiddiq/feature/mysql-integration
+[1;36m|[m[31m\[m  
+[1;36m|[m * [33mca38688[m[33m ([m[1;31morigin/feature/mysql-integration[m[33m, [m[1;32mfeature/mysql-integration[m[33m)[m Fav icon
+* [31m|[m [33m39d0cf6[m Merge pull request #1 from tashfeensiddiq/feature/mysql-integration
+[32m|[m[31m\[m[31m|[m 
+[32m|[m * [33m97a9bcd[m Integrate MySQL database and add shopping cart UI
+[32m|[m[32m/[m  
+* [33mf711097[m Add full screen map and restaurant menu
+* [33md471d1e[m Connect shop locations API with OpenStreetMap
+* [33m2bf835a[m Add files via upload
