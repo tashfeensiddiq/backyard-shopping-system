@@ -716,94 +716,101 @@ const toggleFavorite = (shopId: number) => {
 
 </aside>
 
-      {/* MAP AREA */}
-      <section className="map-section">
-
-        {/* HEADER */}
-        <header className="map-header">
-          <div>
-            <h1>Explore Local Shops</h1>
-            <p>
-              Find shops and restaurants around St. John's.
-            </p>
-          </div>
-
-        <button
-          className="close-cart"
+        {/* ORDERS PANEL */}
+      {ordersOpen && (
+        <div
+          className="cart-overlay"
           onClick={() => setOrdersOpen(false)}
-          aria-label="Close orders"
         >
-          ×
-        </button>
-      </div>
+          <section
+            className="cart-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* HEADER */}
+            <div className="cart-header">
+              <div>
+                <h2>My Orders</h2>
+                <p>Track your current and previous orders.</p>
+              </div>
 
-      {ordersLoading ? (
-        <p className="status-message">Loading your orders...</p>
-      ) : ordersError ? (
-        <p className="status-error">{ordersError}</p>
-      ) : orders.length === 0 ? (
-        <div className="empty-cart">
-          <div>📦</div>
-          <h3>No orders yet</h3>
-          <p>Your orders will appear here after checkout.</p>
-        </div>
-      ) : (
-        <div className="cart-items">
-          <h3>Current Orders</h3>
+              <button
+                className="close-cart"
+                type="button"
+                onClick={() => setOrdersOpen(false)}
+                aria-label="Close orders"
+              >
+                ×
+              </button>
+            </div>
 
-          {orders.filter((order) =>
-            ["Pending", "Confirmed", "Preparing", "Out for delivery"]
-              .includes(order.status)
-          ).length === 0 ? (
-            <p>No current orders.</p>
-          ) : (
-            orders
-              .filter((order) =>
-                ["Pending", "Confirmed", "Preparing", "Out for delivery"]
-                  .includes(order.status)
-              )
-              .map((order) => (
-                <div className="order-history-card" key={order.id}>
-                  <h4>Order #{order.id}</h4>
-                  <p>Status: <strong>{order.status}</strong></p>
-                  <p>Payment: {order.payment_method}</p>
-                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
-                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+            {ordersLoading ? (
+              <p className="status-message">Loading your orders...</p>
+            ) : ordersError ? (
+              <p className="status-error">{ordersError}</p>
+            ) : orders.length === 0 ? (
+              <div className="empty-cart">
+                <div>📦</div>
+                <h3>No orders yet</h3>
+                <p>Your orders will appear here after checkout.</p>
+              </div>
+            ) : (
+              <div className="cart-items">
+                <h3>Current Orders</h3>
 
-                  {order.items.map((item) => (
-                    <p key={item.id}>
-                      {item.item_name} × {item.quantity}
-                    </p>
-                  ))}
-                </div>
-              ))
-          )}
+                {orders.filter((order) =>
+                  ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+                    .includes(order.status)
+                ).length === 0 ? (
+                  <p>No current orders.</p>
+                ) : (
+                  orders
+                    .filter((order) =>
+                      ["Pending", "Confirmed", "Preparing", "Out for delivery"]
+                        .includes(order.status)
+                    )
+                    .map((order) => (
+                      <div className="order-history-card" key={order.id}>
+                        <h4>Order #{order.id}</h4>
+                        <p>Status: <strong>{order.status}</strong></p>
+                        <p>Payment: {order.payment_method}</p>
+                        <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                        <p>Date: {new Date(order.created_at).toLocaleString()}</p>
 
-          <h3>Previous Orders</h3>
+                        {order.items.map((item) => (
+                          <p key={item.id}>
+                            {item.item_name} × {item.quantity}
+                          </p>
+                        ))}
+                      </div>
+                    ))
+                )}
 
-          {orders.filter((order) =>
-            ["Delivered", "Cancelled"].includes(order.status)
-          ).length === 0 ? (
-            <p>No previous orders.</p>
-          ) : (
-            orders
-              .filter((order) =>
-                ["Delivered", "Cancelled"].includes(order.status)
-              )
-              .map((order) => (
-                <div className="order-history-card" key={order.id}>
-                  <h4>Order #{order.id}</h4>
-                  <p>Status: <strong>{order.status}</strong></p>
-                  <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
-                  <p>Date: {new Date(order.created_at).toLocaleString()}</p>
-                </div>
-              ))
-          )}
+                <h3>Previous Orders</h3>
+
+                {orders.filter((order) =>
+                  ["Delivered", "Cancelled"].includes(order.status)
+                ).length === 0 ? (
+                  <p>No previous orders.</p>
+                ) : (
+                  orders
+                    .filter((order) =>
+                      ["Delivered", "Cancelled"].includes(order.status)
+                    )
+                    .map((order) => (
+                      <div className="order-history-card" key={order.id}>
+                        <h4>Order #{order.id}</h4>
+                        <p>Status: <strong>{order.status}</strong></p>
+                        <p>Total: ${Number(order.total_amount).toFixed(2)}</p>
+                        <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                      </div>
+                    ))
+                )}
+              </div>
+            )}
+          </section>
         </div>
       )}
-    </section>
-  </div>
-)}
+
 
       {cartOpen && (
         <div className="cart-overlay" onClick={() => setCartOpen(false)}>
