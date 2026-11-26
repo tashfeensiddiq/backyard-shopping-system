@@ -143,10 +143,13 @@ const displayedRestaurants = restaurants.filter((shop) =>
     ? favoriteShopIds.includes(shop.id)
     : true
 );
-  const restaurant =
-    restaurants.find((shop) => shop.id === selectedShopId) ??
-    restaurants[0] ??
-    null;
+
+const restaurant =
+  displayedRestaurants.find(
+    (shop) => shop.id === selectedShopId
+  ) ??
+  displayedRestaurants[0] ??
+  null;
 
   const availableItems = useMemo(() => {
     if (!restaurant) return [];
