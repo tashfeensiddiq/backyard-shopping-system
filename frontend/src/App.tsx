@@ -700,21 +700,7 @@ const toggleFavorite = (shopId: number) => {
           </section>
         </div>
       )}
-      </div>
-    </>
-  )}
-
-  {!loading && !error && !restaurant && (
-    <p className="sidebar-message">
-      No restaurants are currently available.
-    </p>
-  )}
-
-  <div className="sidebar-footer">
-    <span>Backyard Shopping System</span>
-  </div>
-
-</aside>
+      
 
         {/* ORDERS PANEL */}
       {ordersOpen && (
